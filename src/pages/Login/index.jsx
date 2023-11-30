@@ -25,6 +25,7 @@ const Login = ({ onLoginSuccess }) => {
     };
 
     try {
+      // La validation du formulaire entraîne l'envoie des information spécifiées
       const response = await fetch('http://localhost:8000/api/login', {
         method: 'POST',
         headers: {
@@ -33,11 +34,12 @@ const Login = ({ onLoginSuccess }) => {
         body: JSON.stringify(userData),
       });
 
+      // Si tout c'est bien passé on récupère la réponse qui est le token d'auth
       if (response.ok) {
         const { token } = await response.json();
         localStorage.setItem('authToken', token);
         onLoginSuccess(token); // Appel de la fonction de succès pour stocker le token dans le state
-        navigate('/administration'); // Redirection vers la page d'administration après la connexion réussie
+        navigate('/admin'); // Redirection vers la page d'administration après la connexion réussie
       } else {
         setError('Identifiant ou mot de passe incorrect');
       }

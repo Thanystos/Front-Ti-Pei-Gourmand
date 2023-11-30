@@ -2,9 +2,7 @@ import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from './pages/Login';
-import Administration from './pages/Administration';
-
-// ... imports des composants
+import Admin from './pages/Admin';
 
 const rootElement = document.getElementById('root');
 
@@ -21,10 +19,13 @@ const App = () => {
     <React.StrictMode>
       <Router>
         <Routes>
-          <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
           <Route
-            path="/administration"
-            element={authToken ? <Administration /> : <Login onLoginSuccess={handleLoginSuccess} />}
+            path="/login"
+            // On passe notre fonction au login qui s'en servira quand la connexion aura réussi
+            element={<Login onLoginSuccess={handleLoginSuccess} />} />
+          <Route
+            path="/admin"
+            element={authToken ? <Admin /> : <Login onLoginSuccess={handleLoginSuccess} />}
           />
         </Routes>
       </Router>
