@@ -1,15 +1,13 @@
-// MainPanel.jsx
 import React from 'react';
-import styled from 'styled-components';
-
-const PanelContainer = styled.div`
-  flex: 1;
-  padding: 20px;
-  height: 100vh;
-`;
+import AdminNavBar from '../AdminNavBar';
 
 const AdminMainPanel = ({ children }) => {
-  return <PanelContainer>{children}</PanelContainer>;
+  return(
+    <div className='content'>
+      <AdminNavBar />
+      {children}
+    </div>
+  );
 };
 
 export default AdminMainPanel;

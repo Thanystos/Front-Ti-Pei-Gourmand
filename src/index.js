@@ -1,35 +1,33 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from './pages/Login';
 import Admin from './pages/Admin';
+import './utils/style/bootstrap.min.css';
+import './utils/style/templateStyle.css';
+import './utils/style/font.css';
+import { AuthProvider } from './utils/context';
 
 const rootElement = document.getElementById('root');
 
 const App = () => {
-  const [authToken, setAuthToken] = useState('');
-
-  const handleLoginSuccess = (token) => {
-    setAuthToken(token);
-    // Stocker le token dans le localStorage après une connexion réussie
-    localStorage.setItem('authToken', token);
-  };
-
   return (
-    <React.StrictMode>
-      <Router>
+    <Router>
+      <AuthProvider>
         <Routes>
           <Route
+            // la route /login monte le composant Login
             path="/login"
-            // On passe notre fonction au login qui s'en servira quand la connexion aura réussi
-            element={<Login onLoginSuccess={handleLoginSuccess} />} />
+            element={<Login />}
+          />
           <Route
+            // La route /admin monte le composant Admin
             path="/admin"
-            element={authToken ? <Admin /> : <Login onLoginSuccess={handleLoginSuccess} />}
+            element={<Admin />}
           />
         </Routes>
-      </Router>
-    </React.StrictMode>
+      </AuthProvider>
+    </Router>
   );
 };
 

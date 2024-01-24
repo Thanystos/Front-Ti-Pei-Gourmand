@@ -1,79 +1,115 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { Button, Col, Container, Form, Row } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import styled from 'styled-components';
+import { useLocation } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faUserEdit } from '@fortawesome/free-solid-svg-icons';
+import useApiRequest from '../../utils/hooks';
+import { errorMessages } from '../../utils/errors';
+import { useAuth } from '../../utils/hooks';
+import { jwtDecode } from 'jwt-decode';
+import SpinnerWrapper from '../../composants/SpinnerWrapper';
 
-const LoginForm = styled.form`
-  /* Styles pour le formulaire */
-`;
+const Login = () => {
 
-const ErrorMessage = styled.p`
-  color: red;
-`;
+  // Méthode de maj des informations d'authentification. Partagée par un provider.
+  const { updateUserAuth } = useAuth();
 
-const Login = ({ onLoginSuccess }) => {
+  // States récupérant le contenu des champs du même nom du formulaire
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const navigate = useNavigate(); // Utilisation de useNavigate à la place de useHistory
 
+  // State affichant ou non le spinner par dessus la page pendant 1s
+  const [showSpinner, setShowSpinner] = useState(true);
+
+  // Permet la redirection
+  const navigate = useNavigate();
+
+  /* 
+    Utilisation d'un hook pour la requête API
+    Récupération des states du hook et de la méthode de requête
+  */
+  const { isLoading, error, fetchData } = useApiRequest();
+
+  // Permet de récupérer le message lié à la redirection vers le Login
+  const location = useLocation();
+  const errorMessage = location.state?.errorMessage;
+
+  // Requête l'API à la soumission du formulaire
   const handleSubmit = async (e) => {
+
+    // On retire le comportement par défaut du formulaire
     e.preventDefault();
-
-    const userData = {
-      username,
-      password,
+  
+    // Informations nécessaires pour la requête
+    const options = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, password }),
     };
+  
+    // Interroge l'API en matchant les ids du formulaire et les utilisateurs enregistrés
+    const { data } = await fetchData('http://localhost:8000/api/login', options, errorMessages.invalidCredentials);
 
-    try {
-      // La validation du formulaire entraîne l'envoie des information spécifiées
-      const response = await fetch('http://localhost:8000/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
-      });
+    // En cas d'identifiants reconnus
+    if (data.token) {
+      // Stockage du token d'authentification dans le LS
+      localStorage.setItem('authToken', data.token);
 
-      // Si tout c'est bien passé on récupère la réponse qui est le token d'auth
-      if (response.ok) {
-        const { token } = await response.json();
-        localStorage.setItem('authToken', token);
-        onLoginSuccess(token); // Appel de la fonction de succès pour stocker le token dans le state
-        navigate('/admin'); // Redirection vers la page d'administration après la connexion réussie
-      } else {
-        setError('Identifiant ou mot de passe incorrect');
-      }
-    } catch (error) {
-      console.error('Erreur lors de l\'authentification :', error);
-      setError('Erreur lors de la connexion');
+      // Récupération des rôles associés au token
+      const decodedToken = jwtDecode(data.token);
+      const authRoles = decodedToken.roles || '';
+      const authUser = decodedToken.username;
+
+      // Maj des valeurs partagées par le context AuthContext
+      updateUserAuth(data.token, authRoles, authUser);
+
+      // Redirection vers la page d'administration
+      navigate('/admin');
     }
   };
 
+  // Affiche le spinner pendant 1s quand le composant est monté afin de simuler un chargement de la page
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSpinner(false);
+    }, 1000);
+
+     // Nettoyage du timer pour éviter les fuites mémoire
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
-    <>
-      {error && <ErrorMessage>{error}</ErrorMessage>}
-      <LoginForm onSubmit={handleSubmit}>
-        <label htmlFor="username">Identifiant:</label>
-        <input
-          type="text"
-          id="username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          required
-        />
-
-        <label htmlFor="password">Mot de passe:</label>
-        <input
-          type="password"
-          id="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-
-        <input type="submit" value="Se connecter" />
-      </LoginForm>
-    </>
+    <Container fluid className="position-relative d-flex p-0">
+      <SpinnerWrapper $showSpinner={showSpinner || isLoading} />
+      <Container fluid>
+        <Row className="h-100 align-items-center justify-content-center" style={{ minHeight: '100vh' }}>
+          <Col xs={12} sm={8} md={6} lg={5} xl={4}>
+            <div className="bg-secondary rounded p-4 p-sm-5 my-4 mx-3">
+              <div className="d-flex align-items-center justify-content-between mb-3">
+                  <h3 className="text-primary"><FontAwesomeIcon icon={faUserEdit} className='me-2' />TP Gourmand</h3>
+              </div>
+              <Form onSubmit={handleSubmit}>
+                <Form.Floating className="mb-3">
+                  <Form.Control type="text" id="floatingInput"  value={username} onChange={(e) => setUsername(e.target.value)} required />
+                  <label htmlFor="floatingInput">Pseudonyme</label>
+                </Form.Floating>
+                <Form.Floating className="mb-4">
+                  <Form.Control type="password" id="floatingPassword" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                  <label htmlFor="floatingPassword">Mot de passe</label>
+                </Form.Floating>
+                <Button type="submit" className="btn btn-primary py-3 w-100">Connexion</Button>
+                {(error || errorMessage) && (
+                  <p className="text-primary text-center mt-4 mb-0">{error || errorMessage}</p>
+                )}
+              </Form>
+            </div>
+          </Col>
+        </Row>
+      </Container>
+    </Container>
   );
 };
 
