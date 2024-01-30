@@ -1,7 +1,7 @@
 import React from 'react';
-import useApiRequest from '../../utils/hooks';
+import useApiRequest from '../../../utils/hooks';
 import { Button, Modal } from 'react-bootstrap';
-import SpinnerWrapper from '../SpinnerWrapper';
+import SpinnerWrapper from '../../SpinnerWrapper';
 
 const AdminUserDeleteModal = ({ selectedUsernames, setSelectedUsernames, authToken, handleClose, handleSuccess }) => {
 
@@ -21,16 +21,18 @@ const AdminUserDeleteModal = ({ selectedUsernames, setSelectedUsernames, authTok
       body: JSON.stringify({ usernames: selectedUsernames }),
     };
     
-    // Interroge l'API en demandant la suppression de tous les Users de selectedUsernames
-    await fetchData('http://localhost:8000/api/users', options)
-    .then(({ response }) => {
+    try {
+      // Interroge l'API en demandant la suppression de tous les Users de selectedUsernames
+     const { response } = await fetchData('http://localhost:8000/api/users', options)
+    
+     // Si la requête a réussi, ferme la modale et "recharge" la page
+     handleSuccessInModal({ response }, handleClose, handleSuccess);
 
-      // Si la requête a réussi, ferme la modale et "recharge" la page
-      handleSuccessInModal({ response }, handleClose, handleSuccess);
-
-      // Vide le tableau des utilisateurs à supprimer
-      setSelectedUsernames([]);
-    });
+     // Vide le tableau des utilisateurs à supprimer
+     setSelectedUsernames([]);
+    } catch (error) {
+      console.log("Une erreur s'est produite lors de la suppression des utilisateurs : ", error);
+    }
   };
 
   return (
@@ -41,10 +43,10 @@ const AdminUserDeleteModal = ({ selectedUsernames, setSelectedUsernames, authTok
       ) : (
         <Modal show={true} onHide={handleClose} centered>
           <Modal.Header closeButton>
-            <Modal.Title className="modal-title">Suppression d'utilisateurs</Modal.Title>
+            <Modal.Title className="modal-title">Suppression d'employé</Modal.Title>
           </Modal.Header>
           <Modal.Body className='text-center'>
-            <p>Voulez-vous supprimer les utilisateurs ?</p>
+            <p>Voulez-vous supprimer le ou les employés ?</p>
             <p>
               {selectedUsernames.map((username, index) => (
                 <React.Fragment key={username}>

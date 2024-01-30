@@ -2,7 +2,7 @@ import { faAngleDown, faLaptop, faUserEdit, faUserGear } from '@fortawesome/free
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import React, { useState } from 'react';
 import { Nav, NavDropdown, Navbar } from 'react-bootstrap';
-import { useAuth } from '../../utils/hooks/index'
+import { useAuth } from '../../../utils/hooks/index'
 
 const AdminSidebar = ( { handleOptionClick }) => {
 

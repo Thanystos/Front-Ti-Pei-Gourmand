@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import useApiRequest from '../../utils/hooks';
-import SpinnerWrapper from '../SpinnerWrapper';
+import useApiRequest from '../../../utils/hooks';
+import SpinnerWrapper from '../../SpinnerWrapper';
 import { Button, Form, Modal } from 'react-bootstrap';
 
 const AdminUserAddAndEditModal = ({ authToken, handleClose, handleSuccess, user }) => {
@@ -10,7 +10,8 @@ const AdminUserAddAndEditModal = ({ authToken, handleClose, handleSuccess, user 
   const [roles, setRoles] = useState(user ? user.roles : '');
   const [password, setPassword] = useState('');
   const [realName, setRealName] = useState(user ? user.realName : '');
-  const [image, setImage] = useState('');
+  const [imageFile, setImageFile] = useState(null);
+  const [imageName, setImageName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState(user ? user.phoneNumber : '');
   const [email, setEmail] = useState(user ? user.email : '');
 
@@ -87,36 +88,138 @@ const AdminUserAddAndEditModal = ({ authToken, handleClose, handleSuccess, user 
     setRoles(updatedRoles);
   };
 
+  // Action à effectuer lorsque un fichier (image) est ajouté
+  const handleImageChange = (e) => {
+
+    // On récupère le fichier du passé
+    const file = e.target.files[0];
+
+    // On met à jour notre state avec le contenu du fichier
+    setImageFile(file);
+
+    // On met à jour notre state avec le nom du fichier
+    setImageName(file.name);
+  };
+
   // Requête l'API à la soumission du formulaire
   const handleSubmit = async (event) => {
 
     // On retire le comportement par défaut du formulaire
     event.preventDefault();
 
+    // Il faut obligatoirement qu'un rôle ait été attribué sinon on sort empêche le submit
     if(roles.length  === 0) {
       alert('Veuillez sélectionner au moins un rôle.');
       return;
     }
 
+    // Contiendra le fichier. FormData est obligatoire pour pouvoir le transmettre à l'API
+    const formData = new FormData();
+
+    // Si une image a été spécifiée
+    if(imageFile !== null) {
+
+      // On construit notre formData avec les informations de cette dernière
+      formData.append('image', imageFile);
+      formData.append('imageName', imageName);
+    }
+
     // Informations nécessaires pour la requête
-    const options = {
-      method: user ? 'PUT' : 'POST',
+    const userOptions = user ? {
+      method: 'PUT',
       headers: {
         'Authorization': `Bearer ${authToken}`,
-        'Content-Type': 'application/ld+json'
+        'content-type': 'application/ld+json'
       },
-      body: JSON.stringify({ username, roles, password, realName, image, phoneNumber, email, hireDate }),
+      body: JSON.stringify({ 
+        username, 
+        roles, 
+        password, 
+        realName, 
+        phoneNumber, 
+        email, 
+        hireDate, 
+
+        // on passe un paramètre supplémentaire indiquant si une image a été spécifiée
+        hasImage: !!imageFile
+      }),
+    } : {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'content-type': 'application/ld+json'
+      },
+      body: JSON.stringify({ 
+        username, 
+        roles, 
+        password, 
+        realName, 
+        phoneNumber, 
+        email, 
+        hireDate, 
+      }),
     };
 
-    const url = user ? `http://localhost:8000/api/users/${user.id}` : 'http://localhost:8000/api/users';
+    const imagePostOptions = {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+      },
+      body: formData,
+    };
 
-    // Interroge l'API en lui demandant de créer un nouvel utilisateur avec les données du formulaire
-    await fetchData(url, options)
-    .then(({ response }) => {
+    const imageDeleteOptions = {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+      },
+    };
 
-      // Si la requête a réussi, ferme la modale et "recharge" la page
-      handleSuccessInModal({ response }, handleClose, handleSuccess);
-    })
+    // Si un user a été spécifié on utilise l'url pour le PUT sinon c'est celle du POST
+    const userUrl = user ? `http://localhost:8000/api/users/${user.id}` : 'http://localhost:8000/api/users';
+
+    // Méthode requêtant l'API
+    const updateUserAndImage = async () => {
+      try {
+        
+        // On requête l'API pour traiter l'inscription ou la modification d'un User
+        const { data: userData, response } = await fetchData(userUrl, userOptions);
+        
+        // On construit l'url de l'image associée à l'utilisateur à partir de l'id de ce dernier
+        const imagePostUrl = `http://localhost:8000/api/images/${userData.user.id}`;
+    
+        // Si une image a été spécifiée dans le formulaire
+        if (imageFile !== null) {
+
+          /* 
+            N'est vraie que si on a modifié un utilisateur avec une nouvelle image. 
+            Dans ce cas on récupère l'id de la précédente image qu'on va vouloir effacer
+          */
+          if (userData.user.userImageId !== null) {
+
+            // On construit l'url avec l'id de l'ancienne image
+            const imageDeleteUrl = `http://localhost:8000/api/images/${userData.user.userImageId}`
+
+            // On requête l'API pour supprimer l'ancienne image
+            await fetchData(imageDeleteUrl, imageDeleteOptions);
+          }
+    
+          // On requête l'API pour inscrire la nouvelle image
+          await fetchData(imagePostUrl, imagePostOptions);
+    
+          // Si la requête a réussi, ferme la modale et "recharge" la page
+          handleSuccessInModal({ response }, handleClose, handleSuccess);
+        } else {
+
+          // Si la requête a réussi, ferme la modale et "recharge" la page
+          handleSuccessInModal({ response }, handleClose, handleSuccess);
+        }
+      } catch (error) {
+        console.error("Une erreur s'est produite lors de la mise à jour de l'utilisateur :", error);
+      }
+    };
+    
+    updateUserAndImage();
   };
 
   return (
@@ -127,10 +230,10 @@ const AdminUserAddAndEditModal = ({ authToken, handleClose, handleSuccess, user 
       ) : (
         <Modal show={true} onHide={handleClose} centered>
           <Modal.Header closeButton>
-            <Modal.Title className="modal-title">Ajout d'utilisateur</Modal.Title>
+            <Modal.Title className="modal-title">{user ? 'Édition ' : 'Ajout '}d'employé</Modal.Title>
           </Modal.Header>
           <Modal.Body>
-            <Form onSubmit={handleSubmit}>
+            <Form onSubmit={handleSubmit} encType='multipart/form-data'>
               <Form.Group className="mb-3" controlId="username">
                 <Form.Label>Pseudonyme<span className='text-primary ml-2'>*</span></Form.Label>
                 <Form.Control type="text" onChange={(e) => setUsername(e.target.value)} value={username} required />
@@ -198,7 +301,7 @@ const AdminUserAddAndEditModal = ({ authToken, handleClose, handleSuccess, user 
 
               <Form.Group className="mb-3" controlId="image">
                 <Form.Label>Image de profil</Form.Label>
-                <Form.Control type="file" onChange={(e) => setImage(e.target.value)} />
+                <Form.Control type="file" onChange={handleImageChange} />
               </Form.Group>
 
               <div className="d-flex justify-content-center w-100">

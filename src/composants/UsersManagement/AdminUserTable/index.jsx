@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import AdminUserAddAndEditModal from '../AdminUserAddAndEditModal';
 import AdminUserDeleteModal from '../AdminUserDeleteModal';
-import SpinnerWrapper from '../SpinnerWrapper';
-import { useAuth } from '../../utils/hooks';
-import useApiRequest from '../../utils/hooks';
+import SpinnerWrapper from '../../SpinnerWrapper';
+import { useAuth } from '../../../utils/hooks';
+import useApiRequest from '../../../utils/hooks';
 import { Button, Container, Form, Table } from 'react-bootstrap';
 import { differenceInMonths } from 'date-fns';
 
@@ -286,69 +286,3 @@ const AdminUserTable = () => {
 };
 
 export default AdminUserTable;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-<table>
-            <thead>
-              <tr>
-                <th>Username</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user) => (
-                <tr key={user.id}>
-                  <td>{user.username}</td>
-                  <td>
-                    <button onClick={() => handleEditClick(user)}>Éditer</button>
-                  </td>
-                  <td>
-                  {authUser !== user.username && ( // Vérifie si l'utilisateur connecté est différent de l'utilisateur dans la boucle
-                    <button onClick={() => handleDeleteClick(user)}>Supprimer</button>
-                  )}
-                  </td>
-                </tr>
-              ))}
-              <tr>
-                <td>
-                    <button onClick={() => handleAddClick()}>Ajouter</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          
-          {modalOpen && modalType === 'edit' && (
-            <AdminUserEditModal
-              user={selectedUser}
-              authToken={authToken}
-              handleClose={handleModalClose}
-              handleEditSuccess={(updatedUser) => {
-                console.log(updatedUser);
-                // Mise à jour locale des utilisateurs après le succès du PUT
-                const updatedUsers = users.map((user) =>
-                  user.id === updatedUser.id ? updatedUser : user
-                );
-                setUsers(updatedUsers);
-              }}
-            />
-          )}
-
-          */

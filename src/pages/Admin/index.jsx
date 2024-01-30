@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import AdminSidebar from '../../composants/AdminSideBar';
-import AdminMainPanel from '../../composants/AdminMainPanel';
-import AdminUserTable from '../../composants/AdminUserTable';
+import AdminSidebar from '../../composants/Admin/AdminSideBar';
+import AdminMainPanel from '../../composants/Admin/AdminMainPanel';
+import AdminUserTable from '../../composants/UsersManagement/AdminUserTable';
 import { Container } from 'react-bootstrap';
 
 const Admin = () => {

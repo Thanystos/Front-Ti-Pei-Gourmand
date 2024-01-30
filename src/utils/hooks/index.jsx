@@ -42,12 +42,12 @@ export const useApiRequest = (initialLoading = false) => {
         // Si le code de cette réponse correspond à l'expiration du token
         if(response.status === 401) {
 
-          // On renvoie l'utilisateur sur la page d'accueil
+          // Si l'utilisateur n'est pas déjà sur la page Login, On le renvoie sur cette dernière
           navigate('/login', { state : { errorMessage: 'Votre session a expiré. Veuillez vous reconnecter.' } })
         }
-
+        
           // Pour toutes autres erreurs, on la lève et on la rattrape plus loin
-          throw new Error(data.error || data.errors || 'Une erreur inattendue est survenue.');
+          throw new Error(data.error || data.errors || (response.status===401 ? 'Identifiants incorrects' : 'Une erreur inattendue est survenue.'));
         
       }
       
