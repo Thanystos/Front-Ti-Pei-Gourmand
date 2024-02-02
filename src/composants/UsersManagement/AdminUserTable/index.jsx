@@ -4,8 +4,8 @@ import AdminUserDeleteModal from '../AdminUserDeleteModal';
 import SpinnerWrapper from '../../SpinnerWrapper';
 import { useAuth } from '../../../utils/hooks';
 import useApiRequest from '../../../utils/hooks';
-import { Button, Container, Form, Table } from 'react-bootstrap';
-import { differenceInMonths } from 'date-fns';
+import { Button, Container, Dropdown, Form, Table } from 'react-bootstrap';
+import { getLabelForColumn, getColumnValue } from '../../../utils/helpers/adminUserTable';
 
 const AdminUserTable = () => {
 
@@ -24,44 +24,40 @@ const AdminUserTable = () => {
   // State permettant de "recharger" la page en redéclenchant le useEffect
   const [reloadData, setReloadData] = useState(false);
 
+  // State permettant de savoir quelles colonnes sont affichées
+  const [displayedColumns, setDisplayedColumns] = useState({
+    username: true,
+    roles: true,
+    phoneNumber: true,
+    email: true,
+    hireDate: true,
+    endDate: false,
+    employmentStatus: false,
+    socialSecurityNumber: false,
+    comments: false,
+  });
+
+  // Sate contenant l'ensemble des utilisateurs dont la case a été cochée. Utilie pour DELETE.
+  const [selectedUsernames, setSelectedUsernames] = useState([]);
+
+  // State permettant de gérer l'ouverture / fermeture du Dropdown du choix des colonnes à afficher
+  const [showDropdown, setShowDropdown] = useState(false);
+
   /*
     Contient le token d'authentification et le username de l'utilisateur connecté.
     Partagés par un provider.
   */
   const { authToken, authUser } = useAuth();
 
-  // Sate contenant l'ensemble des utilisateurs dont la case a été cochée. Utilie pour DELETE.
-  const [selectedUsernames, setSelectedUsernames] = useState([]);
-
   /*
     Utilisation du hook useApiRequest
     On indique en paramètre la valeur par défaut du state isLoading
   */
-    const { isLoading, error, fetchData, isRedirected } = useApiRequest(true);
+  const { isLoading, error, fetchData, isRedirected } = useApiRequest(true);
+
+  // Méthode permettant d'inverser l'état du Dropdown (ouvert / fermé)
+  const handleToggle = () => setShowDropdown(!showDropdown);
   
-
-  // Calcule le nombre de mois entre l'embauche et la date actuelle
-  const calculateMonthsOfService = (hireDate) => {
-    const currentDate = new Date();
-    const difference = differenceInMonths(currentDate, hireDate);
-
-    return difference;
-  }
-
-  // Convertit les roles en bdd en texte plus convivial pour de l'affichage
-  const mapRoles = (roles) => {
-    return roles.map(role => {
-      switch (role) {
-        case 'ROLE_ADMIN':
-          return 'Admin';
-        case 'ROLE_CUISINIER':
-          return 'Cuisinier';
-        default:
-          return role;
-      }
-    });
-  }
-
   /* Cette méthode n'aurait pas besoin d'être aussi tordue mais montre pourquoi usestate
      est parfois embêtante. Usestate est asynchrone et demander d'afficher le contenu d'un
      state juste après sa maj p.e compliqué. En effet il se peut que ce dernier n'ait pas 
@@ -94,46 +90,19 @@ const AdminUserTable = () => {
     });
   };
 
-  useEffect(() => {
-
-    // Méthode permettant l'appel API
-    const fechDataAsync = async () => {
-
-      // Informations nécessaires pour la requête
-      const options = {
-        method: 'GET',
-        headers : {
-          'authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
-        }
-      };
-  
-    // Interroge l'API en demandant la récupération de tous les Users
-    const { data } = await fetchData('http://localhost:8000/api/users', options);
-
-    /* Que la requête ait réussi ou pas, je ne l'affiche pas de suite mais si ça a été le cas,
-      elle sera relancée au changement du state isredirected qui cette fois sera false et 
-      permettra l'affichage
-    */
-    if(isRedirected === false) {
-
-      // Je recopie toutes les colonnes de User sauf hireData et roles que je remplace 
-      // par l'ancienneté et les roles plus convivaux
-      setUsers(data['hydra:member'].map(user =>({
-        ...user,
-      })));
-    }
+  /* 
+    Méthode permettant d'inverser l'état de la colonne qui vient d'être cochée / décochée
+    depuis le Dropdown des colonnes à afficher
+  */
+  const handleColumnChange = (columnName) => {
+    setDisplayedColumns((prevColumns) => {
+      return { ...prevColumns, [columnName]: !prevColumns[columnName] };
+    });
   };
-  
-  // Appel de la méthode de requête d'API
-  fechDataAsync();
-
-  // Retrait du warning lié à l'absence de fetchData en dépendance
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authToken, reloadData, isRedirected]);
 
   // Méthode déclenchée au click sur le bouton d'édition
   const handleEditClick = (user) => {
+
     // Le state prend l'utilisateur qui va être modifié
     setSelectedUser(user);
     // Permettra de définir la modale à utiliser
@@ -175,6 +144,45 @@ const AdminUserTable = () => {
     setModalType(null);
   };
 
+  
+
+  useEffect(() => {
+
+    // Méthode permettant l'appel API
+    const fechDataAsync = async () => {
+
+      // Informations nécessaires pour la requête
+      const options = {
+        method: 'GET',
+        headers : {
+          'authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        }
+      };
+  
+    // Interroge l'API en demandant la récupération de tous les Users
+    const { data } = await fetchData('http://localhost:8000/api/users', options);
+
+    /* Que la requête ait réussi ou pas, je ne l'affiche pas de suite mais si ça a été le cas,
+      elle sera relancée au changement du state isredirected qui cette fois sera false et 
+      permettra l'affichage
+    */
+    if(isRedirected === false) {
+
+      // Je recopie toutes les colonnes de User
+      setUsers(data['hydra:member'].map(user =>({
+        ...user,
+      })));
+    }
+  };
+  
+  // Appel de la méthode de requête d'API
+  fechDataAsync();
+
+  // Retrait du warning lié à l'absence de fetchData en dépendance
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authToken, reloadData, isRedirected]);
+
   return (
     <>
       <SpinnerWrapper $showSpinner={isLoading} />
@@ -184,101 +192,136 @@ const AdminUserTable = () => {
         // Il est essentiel d'utiliser un conteneur pour englober l'ensemble de l'expression
         <>
           <Container fluid className="pt-4 px-4">
-      <div className="bg-secondary text-center rounded p-4">
-        <div className="d-flex align-items-center justify-content-between mb-4">
-          <h6 className="mb-0">Liste des utilisateurs</h6>
-        </div>
-        <div className="table-responsive">
-          <Table className="text-start align-middle table-bordered table-hover mb-0">
-            <thead>
-              <tr className="text-white">
-                <th scope="col"></th>
-                <th scope="col">Pseudonyme</th>
-                <th scope="col">Nom</th>
-                <th scope="col">Téléphone</th>
-                <th scope="col">E-mail</th>
-                <th scope="col">Ancienneté</th>
-                <th scope="col">Rôle(s)</th>
-                <th scope="col"></th>
-              </tr>
-            </thead>
-            <tbody>
-            {users.map((user) => (
-              <tr key={user.id}>
-                {authUser !== user.username ? (
-                  <td>
-                    <Form.Check 
-                      type="checkbox" 
-                      onChange={() => handleCheckboxChange(user.username)} 
-                      checked={selectedUsernames.includes(user.username)}
-                    />
-                </td>
-                ) : (
-                  <td>
-                  </td>
-                )}
-                <td>{user.username}</td>
-                <td>{user.realName}</td>
-                <td>{user.phoneNumber}</td>
-                <td>{user.email}</td>
-                <td>{calculateMonthsOfService(user.hireDate)} mois</td>
-                <td>{mapRoles(user.roles).join(' / ')}</td>
-                <td>
-                  <Button 
-                    variant="primary" 
-                    size="sm" 
-                    onClick={() => handleEditClick(user)}
-                  >
-                    Modifier
-                  </Button>
-                </td>
-              </tr>
-            ))}
-            </tbody>
-          </Table>
-        </div>
-        <div className="d-flex justify-content-center mt-4">
-          <Button variant="success" 
-            size="sm" 
-            className="me-4" 
-            onClick={() => handleAddClick()}
-          >
-            Ajouter
-          </Button>
-          <Button 
-            variant="primary" 
-            size="sm" 
-            onClick={() => handleDeleteClick()}
-            disabled={selectedUsernames.length === 0}
-          >
-            Supprimer
-          </Button>
-        </div>
-      </div>
+            <div className="bg-secondary text-center rounded p-4">
+              <div className="d-flex align-items-center justify-content-between mb-4">
+                <h6 className="mb-0">Liste des utilisateurs</h6>
+              </div>
+              <div className="table-responsive">
+                <Table className="text-start align-middle table-bordered table-hover mb-0">
+                  <thead>
+                    <tr className="text-white">
+                      <th scope="col"></th>
+                      <th key="realName" scope="col" className='text-center'>Nom</th>
 
-      {modalOpen && (modalType === 'add' || modalType === 'edit') && (
-        <AdminUserAddAndEditModal
-          authToken={authToken}
-          handleClose={handleModalClose}
-          handleSuccess={() => {
-            setReloadData(prevState => !prevState);
-          }}
-          user={selectedUser}
-        />
-      )}
+                      {Object.entries(displayedColumns).map(([columnValue, isActive]) => {
+                        return isActive && (
+                          <th key={columnValue} scope="col" className='text-center'>
+                            {getLabelForColumn(columnValue)}
+                          </th>
+                        );
+                      })}
 
-      {modalOpen && modalType === 'delete' && (
-        <AdminUserDeleteModal
-          selectedUsernames={selectedUsernames}
-          setSelectedUsernames={setSelectedUsernames}
-          authToken={authToken}
-          handleClose={handleModalClose}
-          handleSuccess={() => {
-            setReloadData(prevState => !prevState);
-          }}
-        />
-      )}
-    </Container>
+                      <th scope="col"></th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+
+                    {users.map((user) => (
+                      <tr key={user.id}>
+
+                        {authUser !== user.username ? (
+                          <td className='text-center'>
+                            <Form.Check 
+                              type="checkbox" 
+                              onChange={() => handleCheckboxChange(user.username)} 
+                              checked={selectedUsernames.includes(user.username)}
+                            />
+                          </td>
+                        ) : (
+                          <td>
+                          </td>
+                        )}
+                        <td className='text-center'>{user.realName}</td>
+                        
+                        {Object.entries(displayedColumns).map(([columnKey, isActive]) => (
+                          isActive && (
+                            <td key={columnKey} className='text-center'>
+                              {getColumnValue(user, columnKey)}
+                            </td>
+                          )
+                        ))}
+
+                        <td className='text-center'>
+                          <Button 
+                            variant="primary" 
+                            size="sm" 
+                            onClick={() => handleEditClick(user)}
+                          >
+                            Modifier
+                          </Button>
+                        </td>
+
+                      </tr>
+                    ))}
+
+                  </tbody>
+                </Table>
+              </div>
+
+              <div className="d-flex justify-content-center mt-4">
+                <Button variant="success" 
+                  size="sm" 
+                  className="me-4" 
+                  onClick={() => handleAddClick()}
+                >
+                  Ajouter
+                </Button>
+                <Button 
+                  variant="primary" 
+                  size="sm" 
+                  onClick={() => handleDeleteClick()}
+                  disabled={selectedUsernames.length === 0}
+                >
+                  Supprimer
+                </Button>
+              </div>
+
+            </div>
+
+            <Dropdown show={showDropdown} className='mt-4 d-flex justify-content-center'>
+              
+              <Dropdown.Toggle variant="info" size='sm' id="dropdown-basic" onClick={handleToggle}>
+                Informations à afficher
+              </Dropdown.Toggle>
+
+              <Dropdown.Menu className='ps-3 pe-3' style={{width: '167px', fontSize: '.875rem'}}>
+                {Object.entries(displayedColumns).map(([columnName, isActive]) => (
+                  <Form.Check
+                    key={columnName}
+                    type="checkbox"
+                    label={getLabelForColumn(columnName)}
+                    checked={isActive}
+                    onChange={() => handleColumnChange(columnName)}
+                  />
+                ))} 
+              </Dropdown.Menu>
+
+            </Dropdown>
+
+            {modalOpen && (modalType === 'add' || modalType === 'edit') && (
+              <AdminUserAddAndEditModal
+                authToken={authToken}
+                handleClose={handleModalClose}
+                handleSuccess={() => {
+                  setReloadData(prevState => !prevState);
+                }}
+                user={selectedUser}
+              />
+            )}
+
+            {modalOpen && modalType === 'delete' && (
+              <AdminUserDeleteModal
+                selectedUsernames={selectedUsernames}
+                setSelectedUsernames={setSelectedUsernames}
+                authToken={authToken}
+                handleClose={handleModalClose}
+                handleSuccess={() => {
+                  setReloadData(prevState => !prevState);
+                }}
+              />
+            )}
+          </Container>
         </>
       )}
     </>

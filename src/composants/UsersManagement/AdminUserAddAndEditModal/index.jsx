@@ -7,13 +7,18 @@ const AdminUserAddAndEditModal = ({ authToken, handleClose, handleSuccess, user 
 
   // States récupérant le contenu des champs du même nom du formulaire
   const [username, setUsername] = useState(user ? user.username : '');
-  const [roles, setRoles] = useState(user ? user.roles : '');
-  const [password, setPassword] = useState('');
   const [realName, setRealName] = useState(user ? user.realName : '');
+  const [password, setPassword] = useState('');
+  const [roles, setRoles] = useState(user ? user.roles : '');
+  const [email, setEmail] = useState(user ? user.email : '');
+  const [phoneNumber, setPhoneNumber] = useState(user ? user.phoneNumber : '');
+  const [employmentStatus, setEmploymentStatus] = useState(user ? user.employmentStatus : '');
+  const [socialSecurityNumber, setSocialSecurityNumber] = useState(user ? user.socialSecurityNumber : '');
+  const [comments, setComments] = useState(user ? user.comments : '');
   const [imageFile, setImageFile] = useState(null);
   const [imageName, setImageName] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState(user ? user.phoneNumber : '');
-  const [email, setEmail] = useState(user ? user.email : '');
+  
+  
 
   // Utilisation du hook useApiRequest
   const { isLoading, error, fetchData, handleSuccessInModal } = useApiRequest();
@@ -37,10 +42,10 @@ const AdminUserAddAndEditModal = ({ authToken, handleClose, handleSuccess, user 
   };
 
   // Convertit la String de date de la bdd en Date pour la valeur par défaut du champ date
-  const stringToDate = (hireDate) => {
+  const stringToDate = (date) => {
 
     // On crée un objet Date avec notre String de date
-    const formattedDate = new Date(hireDate);
+    const formattedDate = new Date(date);
 
     // On en déduit l'année
     const year = formattedDate.getFullYear();
@@ -56,6 +61,7 @@ const AdminUserAddAndEditModal = ({ authToken, handleClose, handleSuccess, user 
 };
 
   const [hireDate, setHireDate] = useState(user ? stringToDate(user.hireDate) : '');
+  const [endDate, setEndDate] = useState(user ? stringToDate(user.endDate) : '');
 
   // Action à effectuer lorsque les rôles sont changés via les checkbox
   const handlerolesChange = (e) => {
@@ -139,6 +145,10 @@ const AdminUserAddAndEditModal = ({ authToken, handleClose, handleSuccess, user 
         phoneNumber, 
         email, 
         hireDate, 
+        endDate, 
+        employmentStatus, 
+        socialSecurityNumber, 
+        comments,
 
         // on passe un paramètre supplémentaire indiquant si une image a été spécifiée
         hasImage: !!imageFile
@@ -157,6 +167,10 @@ const AdminUserAddAndEditModal = ({ authToken, handleClose, handleSuccess, user 
         phoneNumber, 
         email, 
         hireDate, 
+        endDate, 
+        employmentStatus, 
+        socialSecurityNumber, 
+        comments,
       }),
     };
 
@@ -289,13 +303,59 @@ const AdminUserAddAndEditModal = ({ authToken, handleClose, handleSuccess, user 
               </Form.Group>
 
               <Form.Group className="mb-3" controlId="hiredate">
-                <Form.Label>Date d'embauche<span className='text-primary ml-2'>*</span></Form.Label>
+                <Form.Label>Date d'embauche</Form.Label>
                 <Form.Control 
                   type="date" 
                   onChange={(e) => setHireDate(e.target.value)} 
                   value={hireDate} 
-                  required
                   max={getCurrentDate()} 
+                />
+              </Form.Group>
+
+              <Form.Group className="mb-3" controlId="enddate">
+                <Form.Label>Fin du contrat</Form.Label>
+                <Form.Control 
+                  type="date" 
+                  onChange={(e) => setEndDate(e.target.value)} 
+                  value={endDate} 
+                  min={getCurrentDate()} 
+                />
+              </Form.Group>
+
+              <Form.Group className="mb-3" controlId="employmentstatus">
+              <Form.Label>Type de contrat</Form.Label>
+                <Form.Select 
+                  className="mb-3" 
+                  aria-label="Type de contrat" 
+                  onChange={(e) => setEmploymentStatus(e.target.value)} 
+                  value={employmentStatus}
+                >
+                  <option value="" disabled={user !== null}>-----</option>
+                  <option value="CDI">CDI</option>
+                  <option value="CDD">CDD</option>
+                  <option value="Intérim">Intérim</option>
+                  <option value="Temps partiel">Temps partiel</option>
+                  <option value="Saisonnier">Saisonnier</option>
+                </Form.Select>
+              </Form.Group>
+
+              <Form.Group className="mb-3" controlId="socialsecuritynumber">
+                <Form.Label>N° Sécu</Form.Label>
+                <Form.Control 
+                  type="text" 
+                  maxLength={20} 
+                  onChange={(e) => setSocialSecurityNumber(e.target.value)} 
+                  value={socialSecurityNumber} 
+                />
+              </Form.Group>
+
+              <Form.Group className="mb-3" controlId="comments">
+                <Form.Label>Commentaires</Form.Label>
+                <Form.Control 
+                  as="textarea" 
+                  rows={3} 
+                  onChange={(e) => setComments(e.target.value)} 
+                  value={comments} 
                 />
               </Form.Group>
 
