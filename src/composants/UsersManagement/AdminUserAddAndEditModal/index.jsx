@@ -1,15 +1,18 @@
-import React, { useState } from 'react';
-import useApiRequest from '../../../utils/hooks';
+import React, { useEffect, useState } from 'react';
+import { useApiRequest, useAuth, useCache, useModal } from '../../../utils/hooks';
 import SpinnerWrapper from '../../SpinnerWrapper';
 import { Button, Form, Modal } from 'react-bootstrap';
+import { getUserRoles, getCurrentDate, stringToDate } from '../../../utils/helpers/adminUserAddAndEditModal';
 
-const AdminUserAddAndEditModal = ({ authToken, handleClose, handleSuccess, user }) => {
+const AdminUserAddAndEditModal = ({ handleClose, handleSuccess, user }) => {
+
+  const { cache } = useCache();
+  const { authToken, updateUserAuth } = useAuth();
 
   // States récupérant le contenu des champs du même nom du formulaire
   const [username, setUsername] = useState(user ? user.username : '');
   const [realName, setRealName] = useState(user ? user.realName : '');
   const [password, setPassword] = useState('');
-  const [roles, setRoles] = useState(user ? user.roles : '');
   const [email, setEmail] = useState(user ? user.email : '');
   const [phoneNumber, setPhoneNumber] = useState(user ? user.phoneNumber : '');
   const [employmentStatus, setEmploymentStatus] = useState(user ? user.employmentStatus : '');
@@ -17,51 +20,42 @@ const AdminUserAddAndEditModal = ({ authToken, handleClose, handleSuccess, user 
   const [comments, setComments] = useState(user ? user.comments : '');
   const [imageFile, setImageFile] = useState(null);
   const [imageName, setImageName] = useState('');
-  
-  
-
-  // Utilisation du hook useApiRequest
-  const { isLoading, error, fetchData, handleSuccessInModal } = useApiRequest();
-
-  /*
-    Permet de retourner la date actuelle à transmettre au champ date afin que ce dernier
-    ne puisse pas accepter des valeurs ultérieures à cette dernière
-  */
-  const getCurrentDate = () => {
-    const currentDate = new Date();
-    const year = currentDate.getFullYear();
-
-    // Les mois commencent à 0, d'où le + 1
-    let month = currentDate.getMonth() + 1;
-    let day = currentDate.getDate();
-
-    month = month < 10 ? `0${month}` : month;
-    day = day < 10 ? `0${day}` : day;
-
-    return `${year}-${month}-${day}`;
-  };
-
-  // Convertit la String de date de la bdd en Date pour la valeur par défaut du champ date
-  const stringToDate = (date) => {
-
-    // On crée un objet Date avec notre String de date
-    const formattedDate = new Date(date);
-
-    // On en déduit l'année
-    const year = formattedDate.getFullYear();
-
-    // Les mois commencent à 0, d'où le + 1. On en déduit le mois
-    const month = (formattedDate.getMonth() + 1).toString().padStart(2, '0');
-
-    // On en déduit le jour
-    const day = formattedDate.getDate().toString().padStart(2, '0');
-
-    // on retourne la date convertit en Date
-    return `${year}-${month}-${day}`;
-};
-
   const [hireDate, setHireDate] = useState(user ? stringToDate(user.hireDate) : '');
   const [endDate, setEndDate] = useState(user ? stringToDate(user.endDate) : '');
+
+  // State contenant l'id des rôles associés au User
+  const [userRoles, setUserRoles] = useState(new Set(user ? getUserRoles(user).map(role => role.id) : []));
+  
+  // On copie l'état initial du state précédent pour suivre l'évolution des rôles attribués au User
+  const initialUserRoles = new Set(user ? getUserRoles(user).map(role => role.id) : []);
+
+  // State contenant l'intégralité des Rôles qu'il est possible d'attribuer
+  const [allRoles, setAllRoles] = useState([]);
+  
+  // Utilisation du hook useApiRequest
+  const { errors, fetchData } = useApiRequest();
+
+  // Utilisation du hook useModal
+  const { handleSuccessInModal } = useModal();
+
+  // Contient la réponse de la requête d'inscription ou de modification du User
+  const [userResponse, setUserResponse] = useState(null);
+
+  // Détermine si un role est présent dans notre Set de roles
+  const isRoleSelected = (roleId) => userRoles.has(roleId);
+
+  // State permettant de gérer le spinner de chargement
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Détermine si 2 Set contiennent exactement les mêmes éléments
+  const isSuperset = (initialUserRoles, userRoles) => {
+    for (let elem of userRoles) {
+      if (!initialUserRoles.has(elem)) {
+        return false;
+      }
+    }
+    return true;
+  }
 
   // Action à effectuer lorsque les rôles sont changés via les checkbox
   const handlerolesChange = (e) => {
@@ -69,29 +63,24 @@ const AdminUserAddAndEditModal = ({ authToken, handleClose, handleSuccess, user 
     // Récupère la valeur et l'état de mes checkbox
     const { value, checked } = e.target;
 
-    // Contient les rôles actuellement check
-    const updatedRoles = [...roles];
-  
-    // Si la case vient d'être cochée
+    // Récupère l'ID du rôle sélectionné
+    const roleId = allRoles.find(role => role.name === value)?.id;
+
+    if (!roleId) return; // Vérifie si l'ID du rôle existe, sinon arrête la fonction
+
+    // Crée une copie de l'ensemble des rôles de l'utilisateur
+    const updatedRoles = new Set(userRoles);
+
+    // Si la case vient d'être cochée, ajoute l'ID du rôle à l'ensemble
     if (checked) {
-
-      // On ajoute le rôle associé dans le tableau des rôles
-      updatedRoles.push(value);
-    
-    // Sinon
+      updatedRoles.add(roleId);
     } else {
-
-      // On trouve la position du rôle dans le tableau des rôles
-      const index = updatedRoles.indexOf(value);
-      if (index !== -1) {
-
-        // On retire le rôle associé du tableau des rôles
-        updatedRoles.splice(index, 1);
-      }
+      // Si la case est décochée, retire l'ID du rôle de l'ensemble
+      updatedRoles.delete(roleId);
     }
 
-    // On met à jour le tableau des rôles avec le nouveau tableau duquel on a ajouté ou retiré un rôle
-    setRoles(updatedRoles);
+    // Met à jour l'ensemble des rôles de l'utilisateur avec la copie mise à jour
+    setUserRoles(updatedRoles);
   };
 
   // Action à effectuer lorsque un fichier (image) est ajouté
@@ -108,14 +97,20 @@ const AdminUserAddAndEditModal = ({ authToken, handleClose, handleSuccess, user 
   };
 
   // Requête l'API à la soumission du formulaire
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (e) => {
+
+    // Mes requêtes vont s'effectuer, j'affiche mon loading
+    setIsLoading(true);
 
     // On retire le comportement par défaut du formulaire
-    event.preventDefault();
+    e.preventDefault();
 
-    // Il faut obligatoirement qu'un rôle ait été attribué sinon on sort empêche le submit
-    if(roles.length  === 0) {
+    // Il faut obligatoirement qu'un rôle ait été attribué sinon on sort et on empêche le submit
+    if(userRoles.size  === 0) {
       alert('Veuillez sélectionner au moins un rôle.');
+
+      // Je retire le loading
+      setIsLoading(false);
       return;
     }
 
@@ -130,118 +125,208 @@ const AdminUserAddAndEditModal = ({ authToken, handleClose, handleSuccess, user 
       formData.append('imageName', imageName);
     }
 
+    const isPostMethod = !user;
+
     // Informations nécessaires pour la requête
-    const userOptions = user ? {
-      method: 'PUT',
+    const userOptions = {
+      method: user ? 'PUT' : 'POST',
       headers: {
         'Authorization': `Bearer ${authToken}`,
         'content-type': 'application/ld+json'
       },
       body: JSON.stringify({ 
-        username, 
-        roles, 
-        password, 
-        realName, 
-        phoneNumber, 
-        email, 
-        hireDate, 
-        endDate, 
-        employmentStatus, 
-        socialSecurityNumber, 
+        username,
+        password,
+        realName,
+        phoneNumber,
+        email,
+        hireDate: (hireDate === "" || hireDate === "NaN-NaN-NaN") ? null : hireDate,
+        endDate: (endDate === "" || endDate === "NaN-NaN-NaN") ? null : endDate,
+        employmentStatus,
+        socialSecurityNumber,
         comments,
 
-        // on passe un paramètre supplémentaire indiquant si une image a été spécifiée
-        hasImage: !!imageFile
-      }),
-    } : {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${authToken}`,
-        'content-type': 'application/ld+json'
-      },
-      body: JSON.stringify({ 
-        username, 
-        roles, 
-        password, 
-        realName, 
-        phoneNumber, 
-        email, 
-        hireDate, 
-        endDate, 
-        employmentStatus, 
-        socialSecurityNumber, 
-        comments,
+        // Ajoute hasImage seulement si la méthode est POST 
+        hasImage: isPostMethod ? !!imageFile : undefined,
       }),
     };
-
-    const imagePostOptions = {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${authToken}`,
-      },
-      body: formData,
-    };
-
-    const imageDeleteOptions = {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${authToken}`,
-      },
-    };
-
-    // Si un user a été spécifié on utilise l'url pour le PUT sinon c'est celle du POST
-    const userUrl = user ? `http://localhost:8000/api/users/${user.id}` : 'http://localhost:8000/api/users';
 
     // Méthode requêtant l'API
-    const updateUserAndImage = async () => {
-      try {
-        
-        // On requête l'API pour traiter l'inscription ou la modification d'un User
-        const { data: userData, response } = await fetchData(userUrl, userOptions);
-        
-        // On construit l'url de l'image associée à l'utilisateur à partir de l'id de ce dernier
-        const imagePostUrl = `http://localhost:8000/api/images/${userData.user.id}`;
-    
-        // Si une image a été spécifiée dans le formulaire
-        if (imageFile !== null) {
+    const submitUser = async () => {
 
-          /* 
-            N'est vraie que si on a modifié un utilisateur avec une nouvelle image. 
-            Dans ce cas on récupère l'id de la précédente image qu'on va vouloir effacer
-          */
-          if (userData.user.userImageId !== null) {
+      /* ************ TRAITEMENT DU USER ************ */
 
-            // On construit l'url avec l'id de l'ancienne image
-            const imageDeleteUrl = `http://localhost:8000/api/images/${userData.user.userImageId}`
 
-            // On requête l'API pour supprimer l'ancienne image
-            await fetchData(imageDeleteUrl, imageDeleteOptions);
-          }
-    
-          // On requête l'API pour inscrire la nouvelle image
-          await fetchData(imagePostUrl, imagePostOptions);
-    
-          // Si la requête a réussi, ferme la modale et "recharge" la page
-          handleSuccessInModal({ response }, handleClose, handleSuccess);
-        } else {
+      // Si un user a été spécifié on utilise l'url pour le PUT sinon c'est celle du POST
+      const userUrl = user ? `http://localhost:8000/api/users/${user.id}` : 'http://localhost:8000/api/users';
+      
+      // On requête l'API pour traiter l'inscription ou la modification d'un User
+      const { data: userData, response } = await fetchData(userUrl, userOptions);
 
-          // Si la requête a réussi, ferme la modale et "recharge" la page
-          handleSuccessInModal({ response }, handleClose, handleSuccess);
-        }
-      } catch (error) {
-        console.error("Une erreur s'est produite lors de la mise à jour de l'utilisateur :", error);
+      if (!userData) {
+        setIsLoading(false);
+        return;
       }
+
+      console.log('userdata : ', userData);
+
+      if(userData.token) {
+        
+        /* 
+          Stockage de l'objet authToken dans le LocalStorage et 
+          Maj des valeurs partagées par le context AuthContext
+        */
+        updateUserAuth(userData.token);
+      }
+      
+
+
+      /* ************ FIN DU TRAITEMENT DU USER ************ */
+
+
+      /* --------------------------------------------------- */
+
+
+      /* ************ TRAITEMENT DE L'IMAGE ************ */
+
+      
+      // Si une image a été spécifiée
+      if (imageFile !== null) {
+
+        const imagePostOptions = {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+          },
+          body: formData,
+        };
+
+        // On construit l'url de l'image associée à l'utilisateur à partir de l'id de ce dernier
+        const imagePostUrl = `http://localhost:8000/api/users/${userData.user.id}`;
+
+        // On requête l'API pour inscrire la nouvelle image
+        await fetchData(imagePostUrl, imagePostOptions);
+      }
+
+
+      /* ************ FIN DU TRAITEMENT DE L'IMAGE ************ */
+
+      setUserResponse({userData, response});
+      
     };
     
-    updateUserAndImage();
+    submitUser();
   };
 
+
+  /* ************ TRAITEMENT DES ASSOCIATIONS USER / ROLE ************ */
+
+
+  useEffect(() => {
+    console.log('le useeffect se déclenche');
+
+    const fetchUserRoleDataAsync = async () => {
+
+      // Si mes 2 ensemble sont différents
+      if(!isSuperset(initialUserRoles, userRoles) || !isSuperset(userRoles, initialUserRoles)) {
+
+        // Détermine les rôles ajoutés (présents dans userRoles mais pas dans initialUserRoles)
+        const rolesToAdd = new Set([...userRoles].filter(roleId => !initialUserRoles.has(roleId)));
+        
+        // Détermine les rôles retirés (présents dans initialUserRoles mais pas dans userRoles)
+        const rolesToRemove = new Set([...initialUserRoles].filter(roleId => !userRoles.has(roleId)));
+
+        // Si il y a de nouveaux rôles qui ont été ajoutés
+        if (rolesToAdd.size > 0) {
+          const userRolePostOptions = {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${authToken}`,
+              'content-type': 'application/ld+json'
+            },
+            body: JSON.stringify({
+              user: userResponse.userData.user.id,
+              roles: user ? [...rolesToAdd] : [...userRoles]
+            }),
+          };
+  
+          console.log('mon cache entre les 2 requêtes vaut : ', cache);
+
+          // On requête l'API pour inscrire la ou les nouvelle(s) association(s) user / role
+          await fetchData('http://localhost:8000/api/user_roles', userRolePostOptions);
+        }
+        
+        // Si des rôles ont été supprimés
+         if (rolesToRemove.size > 0) {
+          const userRoleDeleteOptions = {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${authToken}`,
+              'content-type': 'application/ld+json'
+            },
+            body: JSON.stringify({
+            user: userResponse.userData.user.id,
+            roles: [...rolesToRemove]
+            }),
+          };
+
+          // On requête l'API pour retirer la ou les ancienne(s) association(s) user / role
+          await fetchData('http://localhost:8000/api/user_roles', userRoleDeleteOptions);
+        }
+      }
+      console.log('userResponse pour la fin vaut : ', userResponse);
+      handleSuccessInModal(userResponse.response, handleClose, handleSuccess, setIsLoading);
+      
+      setUserResponse(null);
+    }
+
+    if(userResponse && cache['http://localhost:8000/api/users']) {
+      console.log('je remplis la condition');
+      console.log('userResponse vaut : ', userResponse);
+      console.log('le contenu de mon cache pour les users vaut : ', cache['http://localhost:8000/api/users']);
+      fetchUserRoleDataAsync();
+    }
+
+  }, [userResponse]);
+
+
+  /* ************ FIN DU TRAITEMENT DES ASSOCIATIONS USER / ROLE ************ */
+
+
+  useEffect(() => {
+
+    // Méthode permettant l'appel API
+    const fechRoleDataAsync = async () => {
+
+      // Informations nécessaires pour la requête
+      const options = {
+        method: 'GET',
+        headers : {
+          'authorization': `Bearer ${authToken}`,
+        }
+      };
+
+      // Interroge l'API en demandant la récupération de tous les roles attribuables
+      const { data: roleData } = await fetchData('http://localhost:8000/api/roles', options);
+
+      // Je recopie tous les rôles de Role
+      setAllRoles(roleData['hydra:member'].map(role =>({
+        ...role,
+      })));
+
+      // Les données nécessaires à l'affichage ont été récupérées. Je retire le loading
+      setIsLoading(false);
+    };
+
+    fechRoleDataAsync();
+
+  // Retrait du warning lié à l'absence de fetchData en dépendance
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authToken]);
+  
   return (
     <>
       <SpinnerWrapper $showSpinner={isLoading} />
-      {error ? (
-        <p>{error}</p>
-      ) : (
         <Modal show={true} onHide={handleClose} centered>
           <Modal.Header closeButton>
             <Modal.Title className="modal-title">{user ? 'Édition ' : 'Ajout '}d'employé</Modal.Title>
@@ -251,11 +336,14 @@ const AdminUserAddAndEditModal = ({ authToken, handleClose, handleSuccess, user 
               <Form.Group className="mb-3" controlId="username">
                 <Form.Label>Pseudonyme<span className='text-primary ml-2'>*</span></Form.Label>
                 <Form.Control type="text" onChange={(e) => setUsername(e.target.value)} value={username} required />
+                {errors.includes("duplicateUsername") && <p className="text-primary">Ce pseudonyme est déjà utilisé.</p>}
+                {errors.includes("emptyUsername") && <p className="text-primary">Le pseudonyme doit être spécifié.</p>}
               </Form.Group>
 
               <Form.Group className="mb-3" controlId="realname">
                 <Form.Label>Nom<span className='text-primary ml-2'>*</span></Form.Label>
                 <Form.Control type="text" onChange={(e) => setRealName(e.target.value)} value={realName} required />
+                {errors.includes("emptyRealName") && <p className="text-primary">Le nom doit être spécifié<div className=""></div></p>}
               </Form.Group>
 
               <Form.Group className="mb-3" controlId="password">
@@ -266,40 +354,39 @@ const AdminUserAddAndEditModal = ({ authToken, handleClose, handleSuccess, user 
                   value={password} 
                   required={user ? false : true}
                 />
+                {errors.includes("emptyPassword") && <p className="text-primary">Le mot de passe doit être spécifié.</p>}
               </Form.Group>
 
               <Form.Group className="mb-3">
                 <Form.Label>Rôles à attribuer<span className='text-primary ml-2'>*</span></Form.Label>
                 <div>
-                  <Form.Check
-                    type="checkbox"
-                    label="Admin"
-                    name="adminRole"
-                    id="adminRole"
-                    value="ROLE_ADMIN"
-                    checked={roles.includes('ROLE_ADMIN') || roles.includes('Admin')}
-                    onChange={handlerolesChange}
-                  />
-                  <Form.Check
-                    type="checkbox"
-                    label="Cuisinier"
-                    name="cuisinierRole"
-                    id="cuisinierRole"
-                    value="ROLE_CUISINIER"
-                    checked={roles.includes('ROLE_CUISINIER') || roles.includes('Cuisinier')}
-                    onChange={handlerolesChange}
-                  />
+                  {allRoles.map((role) => (
+                    <Form.Check
+                      type="checkbox"
+                      key={role.name}
+                      label={role.name}
+                      name={role.name}
+                      id={role.name}
+                      value={role.name}
+
+                      // On se sert de notre fonction qui vérifie la présence de l'id dans notre Set de roles
+                      checked={isRoleSelected(role.id)}
+                      onChange={handlerolesChange}
+                    />
+                  ))}
                 </div>
               </Form.Group>
 
               <Form.Group className="mb-3" controlId="email">
                 <Form.Label>Email<span className='text-primary ml-2'>*</span></Form.Label>
                 <Form.Control type="email" onChange={(e) => setEmail(e.target.value)} value={email} required />
+                {errors.includes("emptyEmail") && <p className="text-primary">L'e-mail doit être spécifié.</p>}
               </Form.Group>
 
               <Form.Group className="mb-3" controlId="telephone">
                 <Form.Label>Téléphone<span className='text-primary ml-2'>*</span></Form.Label>
                 <Form.Control type="tel" onChange={(e) => setPhoneNumber(e.target.value)} value={phoneNumber} required />
+                {errors.includes("emptyPhoneNumber") && <p className="text-primary">Le numéro de téléphone doit être spécifié.</p>}
               </Form.Group>
 
               <Form.Group className="mb-3" controlId="hiredate">
@@ -376,7 +463,6 @@ const AdminUserAddAndEditModal = ({ authToken, handleClose, handleSuccess, user 
             </Form>
           </Modal.Body>
         </Modal>
-      )}
     </>
   );
 };

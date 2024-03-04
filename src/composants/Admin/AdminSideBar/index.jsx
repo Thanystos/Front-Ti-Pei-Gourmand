@@ -1,4 +1,4 @@
-import { faAngleDown, faLaptop, faUserEdit, faUserGear } from '@fortawesome/free-solid-svg-icons';
+import { faAngleDown, faKey, faLaptop, faUserEdit, faUserGear } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import React, { useState } from 'react';
 import { Nav, NavDropdown, Navbar } from 'react-bootstrap';
@@ -36,9 +36,10 @@ const AdminSidebar = ( { handleOptionClick }) => {
           </div>
         </div>
         <Nav className="w-100">
-          {authRoles.includes('ROLE_ADMIN') && (
+          {authRoles.includes('Administrateur') && (
             <Nav.Link href="#" className="nav-item nav-link active" onClick={() => onOptionClick('Gestion des utilisateurs')}><i className="me-2"><FontAwesomeIcon icon={faUserGear} /></i>Gestion employés</Nav.Link>
           )}
+          <Nav.Link href="#" className="nav-item nav-link active" onClick={() => onOptionClick('Gestion des roles')}><i className="me-2"><FontAwesomeIcon icon={faKey} /></i>Gestion roles</Nav.Link>
           <NavDropdown title={
             <span>
               <i className="me-2">

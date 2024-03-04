@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import AdminSidebar from '../../composants/Admin/AdminSideBar';
 import AdminMainPanel from '../../composants/Admin/AdminMainPanel';
 import AdminUserTable from '../../composants/UsersManagement/AdminUserTable';
+import AdminRoleTable from '../../composants/RolesManagement/AdminRoleTable';
 import { Container } from 'react-bootstrap';
 
 const Admin = () => {
@@ -19,8 +20,8 @@ const Admin = () => {
     switch (selectedOption) {
       case 'Gestion des utilisateurs':
         return <AdminUserTable />;
-      case 'option2':
-        return <div>Contenu pour Option 2</div>;
+      case 'Gestion des roles':
+        return <AdminRoleTable />;
       default:
         return <div>Sélectionnez une option</div>;
     }

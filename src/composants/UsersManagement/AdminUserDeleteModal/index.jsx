@@ -1,15 +1,24 @@
-import React from 'react';
-import useApiRequest from '../../../utils/hooks';
+import React, { useState } from 'react';
+import useApiRequest, { useModal } from '../../../utils/hooks';
 import { Button, Modal } from 'react-bootstrap';
 import SpinnerWrapper from '../../SpinnerWrapper';
 
 const AdminUserDeleteModal = ({ selectedUsernames, setSelectedUsernames, authToken, handleClose, handleSuccess }) => {
 
   // Utilisation du hook useApiRequest
-  const { isLoading, error, fetchData, handleSuccessInModal } = useApiRequest();
+  const { fetchData } = useApiRequest();
+
+  // Utilisation du hook useModal
+  const { handleSuccessInModal } = useModal();
+
+  // State permettant de gérer le spinner de chargement
+  const [isLoading, setIsLoading] = useState(false);
+  
 
   // Méthode permettant l'appel API
   const handleDelete = async () => {
+
+    setIsLoading(true);
 
     // Informations nécessaires pour la requête
     const options = {
@@ -21,26 +30,19 @@ const AdminUserDeleteModal = ({ selectedUsernames, setSelectedUsernames, authTok
       body: JSON.stringify({ usernames: selectedUsernames }),
     };
     
-    try {
-      // Interroge l'API en demandant la suppression de tous les Users de selectedUsernames
-     const { response } = await fetchData('http://localhost:8000/api/users', options)
+    // Interroge l'API en demandant la suppression de tous les Users de selectedUsernames
+    const { response } = await fetchData('http://localhost:8000/api/users', options)
     
-     // Si la requête a réussi, ferme la modale et "recharge" la page
-     handleSuccessInModal({ response }, handleClose, handleSuccess);
+    // Si la requête a réussi, ferme la modale et "recharge" la page
+    handleSuccessInModal(response, handleClose, handleSuccess, setIsLoading);
 
-     // Vide le tableau des utilisateurs à supprimer
-     setSelectedUsernames([]);
-    } catch (error) {
-      console.log("Une erreur s'est produite lors de la suppression des utilisateurs : ", error);
-    }
+    // Vide le tableau des utilisateurs à supprimer
+    setSelectedUsernames([]);
   };
 
   return (
     <>
       <SpinnerWrapper $showSpinner={isLoading} />
-      {error ? (
-        <p>{error}</p>
-      ) : (
         <Modal show={true} onHide={handleClose} centered>
           <Modal.Header closeButton>
             <Modal.Title className="modal-title">Suppression d'employé</Modal.Title>
@@ -67,7 +69,6 @@ const AdminUserDeleteModal = ({ selectedUsernames, setSelectedUsernames, authTok
             </div>
           </Modal.Footer>
         </Modal>
-      )}
     </>
   );
 }

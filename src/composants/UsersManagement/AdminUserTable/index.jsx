@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AdminUserAddAndEditModal from '../AdminUserAddAndEditModal';
 import AdminUserDeleteModal from '../AdminUserDeleteModal';
 import SpinnerWrapper from '../../SpinnerWrapper';
-import { useAuth } from '../../../utils/hooks';
-import useApiRequest from '../../../utils/hooks';
+import { useAuth, useApiRequest } from '../../../utils/hooks';
 import { Button, Container, Dropdown, Form, Table } from 'react-bootstrap';
 import { getLabelForColumn, getColumnValue } from '../../../utils/helpers/adminUserTable';
 
@@ -49,21 +48,14 @@ const AdminUserTable = () => {
   */
   const { authToken, authUser } = useAuth();
 
-  /*
-    Utilisation du hook useApiRequest
-    On indique en paramètre la valeur par défaut du state isLoading
-  */
-  const { isLoading, error, fetchData, isRedirected } = useApiRequest(true);
+  //Utilisation du hook useApiRequest 
+  const { error, fetchData } = useApiRequest();
+
+  // State permettant de gérer le spinner de chargement
+  const [isLoading, setIsLoading] = useState(true);
 
   // Méthode permettant d'inverser l'état du Dropdown (ouvert / fermé)
   const handleToggle = () => setShowDropdown(!showDropdown);
-  
-  /* Cette méthode n'aurait pas besoin d'être aussi tordue mais montre pourquoi usestate
-     est parfois embêtante. Usestate est asynchrone et demander d'afficher le contenu d'un
-     state juste après sa maj p.e compliqué. En effet il se peut que ce dernier n'ait pas 
-     été maj au moment de l'affichage ce qui donnera des valeurs incohérentes. Utiliser 
-     des fonctions de rappel peut alors être une solution comme montré ci-dessous.
-   */
 
   const handleCheckboxChange = (username) => {
 
@@ -77,14 +69,6 @@ const AdminUserTable = () => {
       const updatedUsernames = prevUsernames.includes(username)
         ? prevUsernames.filter((name) => name !== username)
         : [...prevUsernames, username];
-  
-      /* Ainsi l'affichage devient cohérent
-        Ce log se déclenche immédiatement avec prevUserIds passé en param de la fct de rappel
-        console.log("Previous User Ids:", prevUsernames);
-
-         Ce log va devoir attendre la fin du calcul de updateUserIds
-         console.log("Updated User Ids:", updatedUsernames);
-      */
   
       return updatedUsernames;
     });
@@ -105,8 +89,10 @@ const AdminUserTable = () => {
 
     // Le state prend l'utilisateur qui va être modifié
     setSelectedUser(user);
+
     // Permettra de définir la modale à utiliser
     setModalType('edit');
+
     // Permet l'ouverture de la modale
     setModalOpen(true);
   };
@@ -144,8 +130,6 @@ const AdminUserTable = () => {
     setModalType(null);
   };
 
-  
-
   useEffect(() => {
 
     // Méthode permettant l'appel API
@@ -163,25 +147,28 @@ const AdminUserTable = () => {
     // Interroge l'API en demandant la récupération de tous les Users
     const { data } = await fetchData('http://localhost:8000/api/users', options);
 
-    /* Que la requête ait réussi ou pas, je ne l'affiche pas de suite mais si ça a été le cas,
-      elle sera relancée au changement du state isredirected qui cette fois sera false et 
-      permettra l'affichage
-    */
-    if(isRedirected === false) {
-
-      // Je recopie toutes les colonnes de User
-      setUsers(data['hydra:member'].map(user =>({
-        ...user,
-      })));
+    if (!data) {
+      setIsLoading(false);
+      return;
     }
+
+    console.log('data final : ', data);
+
+    // Je recopie toutes les colonnes de User
+    setUsers(data['hydra:member'].map(user =>({
+      ...user,
+    })));
+
+    // Les données nécessaires à l'affichage ont été récupérées. Je retire le loading
+    setIsLoading(false);
   };
   
   // Appel de la méthode de requête d'API
   fechDataAsync();
-
+  
   // Retrait du warning lié à l'absence de fetchData en dépendance
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authToken, reloadData, isRedirected]);
+  }, [authToken, reloadData]);
 
   return (
     <>
@@ -217,6 +204,10 @@ const AdminUserTable = () => {
 
                   <tbody>
 
+                    {/* 
+                      La méthode map itère sur chaque élément du tableau 'users' 
+                      et applique une fonction à chaque 'user' 
+                    */}
                     {users.map((user) => (
                       <tr key={user.id}>
 
@@ -301,10 +292,9 @@ const AdminUserTable = () => {
 
             {modalOpen && (modalType === 'add' || modalType === 'edit') && (
               <AdminUserAddAndEditModal
-                authToken={authToken}
                 handleClose={handleModalClose}
                 handleSuccess={() => {
-                  setReloadData(prevState => !prevState);
+                  setReloadData(!reloadData);
                 }}
                 user={selectedUser}
               />
@@ -317,7 +307,7 @@ const AdminUserTable = () => {
                 authToken={authToken}
                 handleClose={handleModalClose}
                 handleSuccess={() => {
-                  setReloadData(prevState => !prevState);
+                  setReloadData(!reloadData);
                 }}
               />
             )}

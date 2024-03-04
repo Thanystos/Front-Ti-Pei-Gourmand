@@ -6,27 +6,29 @@ import Admin from './pages/Admin';
 import './utils/style/bootstrap.min.css';
 import './utils/style/templateStyle.css';
 import './utils/style/font.css';
-import { AuthProvider } from './utils/context';
+import { AuthProvider, CacheProvider } from './utils/context';
 
 const rootElement = document.getElementById('root');
 
 const App = () => {
   return (
     <Router>
-      <AuthProvider>
-        <Routes>
-          <Route
-            // la route /login monte le composant Login
-            path="/login"
-            element={<Login />}
-          />
-          <Route
-            // La route /admin monte le composant Admin
-            path="/admin"
-            element={<Admin />}
-          />
-        </Routes>
-      </AuthProvider>
+      <CacheProvider>
+        <AuthProvider>
+          <Routes>
+            <Route
+              // la route /login monte le composant Login
+              path="/login"
+              element={<Login />}
+            />
+            <Route
+              // La route /admin monte le composant Admin
+              path="/admin"
+              element={<Admin />}
+            />
+          </Routes>
+        </AuthProvider>
+      </CacheProvider>
     </Router>
   );
 };

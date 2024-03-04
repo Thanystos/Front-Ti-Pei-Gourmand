@@ -5,9 +5,7 @@ import { useLocation } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUserEdit } from '@fortawesome/free-solid-svg-icons';
 import useApiRequest from '../../utils/hooks';
-import { errorMessages } from '../../utils/errors';
 import { useAuth } from '../../utils/hooks';
-import { jwtDecode } from 'jwt-decode';
 import SpinnerWrapper from '../../composants/SpinnerWrapper';
 
 const Login = () => {
@@ -22,6 +20,9 @@ const Login = () => {
   // State affichant ou non le spinner par dessus la page pendant 1s
   const [showSpinner, setShowSpinner] = useState(true);
 
+  // State permettant de gérer le spinner de chargement
+  const [isLoading, setIsLoading] = useState(false);
+
   // Permet la redirection
   const navigate = useNavigate();
 
@@ -29,7 +30,7 @@ const Login = () => {
     Utilisation d'un hook pour la requête API
     Récupération des states du hook et de la méthode de requête
   */
-  const { isLoading, error, fetchData } = useApiRequest();
+  const { errors, fetchData } = useApiRequest();
 
   // Permet de récupérer le message lié à la redirection vers le Login
   const location = useLocation();
@@ -37,6 +38,9 @@ const Login = () => {
 
   // Requête l'API à la soumission du formulaire
   const handleSubmit = async (e) => {
+
+    // Mes requêtes vont s'effectuer, j'affiche mon loading
+    setIsLoading(true);
 
     // On retire le comportement par défaut du formulaire
     e.preventDefault();
@@ -51,20 +55,23 @@ const Login = () => {
     };
   
     // Interroge l'API en matchant les ids du formulaire et les utilisateurs enregistrés
-    const { data } = await fetchData('http://localhost:8000/api/login', options, errorMessages.invalidCredentials);
+    const { data } = await fetchData('http://localhost:8000/api/login', options, true);
+
+    // La réponse est disponible, je retire le loading
+    setIsLoading(false);
+
+    if (!data) {
+      return;
+    }
 
     // En cas d'identifiants reconnus
     if (data.token) {
-      // Stockage du token d'authentification dans le LS
-      localStorage.setItem('authToken', data.token);
 
-      // Récupération des rôles associés au token
-      const decodedToken = jwtDecode(data.token);
-      const authRoles = decodedToken.roles || '';
-      const authUser = decodedToken.username;
-
-      // Maj des valeurs partagées par le context AuthContext
-      updateUserAuth(data.token, authRoles, authUser);
+      /* 
+        Stockage de l'objet authToken dans le LocalStorage et 
+        Maj des valeurs partagées par le context AuthContext
+      */
+      updateUserAuth(data.token);
 
       // Redirection vers la page d'administration
       navigate('/admin');
@@ -101,8 +108,8 @@ const Login = () => {
                   <label htmlFor="floatingPassword">Mot de passe</label>
                 </Form.Floating>
                 <Button type="submit" className="btn btn-primary py-3 w-100">Connexion</Button>
-                {(error || errorMessage) && (
-                  <p className="text-primary text-center mt-4 mb-0">{error || errorMessage}</p>
+                {(errors ?? errorMessage) && (
+                  <p className="text-primary text-center mt-4 mb-0">{errors ?? errorMessage}</p>
                 )}
               </Form>
             </div>
