@@ -6,7 +6,7 @@ import SpinnerWrapper from '../../SpinnerWrapper';
 const AdminUserDeleteModal = ({ selectedUsernames, setSelectedUsernames, authToken, handleClose, handleSuccess }) => {
 
   // Utilisation du hook useApiRequest
-  const { fetchData } = useApiRequest();
+  const { errors, fetchData } = useApiRequest();
 
   // Utilisation du hook useModal
   const { handleSuccessInModal } = useModal();
@@ -33,6 +33,10 @@ const AdminUserDeleteModal = ({ selectedUsernames, setSelectedUsernames, authTok
     // Interroge l'API en demandant la suppression de tous les Users de selectedUsernames
     const { response } = await fetchData('http://localhost:8000/api/users', options)
     
+    if (!response.ok) {
+      setIsLoading(false);
+      return;
+    }
     // Si la requête a réussi, ferme la modale et "recharge" la page
     handleSuccessInModal(response, handleClose, handleSuccess, setIsLoading);
 
@@ -68,6 +72,7 @@ const AdminUserDeleteModal = ({ selectedUsernames, setSelectedUsernames, authTok
               </Button>
             </div>
           </Modal.Footer>
+          {errors && <p className="text-primary text-center">{errors}</p>}
         </Modal>
     </>
   );

@@ -245,15 +245,27 @@ const AdminUserAddAndEditModal = ({ handleClose, handleSuccess, user }) => {
               'content-type': 'application/ld+json'
             },
             body: JSON.stringify({
-              user: userResponse.userData.user.id,
-              roles: user ? [...rolesToAdd] : [...userRoles]
+              firstEntityId: userResponse.userData.user.id,
+              secondEntityIds: user ? [...rolesToAdd] : [...userRoles],
+
+              // La dernière opération nécessitant de créer un nouveau token, je peux savoir si c'est le cas grâce à cela
+              isLastMethod: rolesToRemove.size === 0,
             }),
           };
   
           console.log('mon cache entre les 2 requêtes vaut : ', cache);
 
           // On requête l'API pour inscrire la ou les nouvelle(s) association(s) user / role
-          await fetchData('http://localhost:8000/api/user_roles', userRolePostOptions);
+          const { data: roleAddData } = await fetchData('http://localhost:8000/api/user_roles', userRolePostOptions);
+
+          if(roleAddData.token) {
+        
+            /* 
+              Stockage de l'objet authToken dans le LocalStorage et 
+              Maj des valeurs partagées par le context AuthContext
+            */
+            updateUserAuth(roleAddData.token);
+          }
         }
         
         // Si des rôles ont été supprimés
@@ -265,13 +277,22 @@ const AdminUserAddAndEditModal = ({ handleClose, handleSuccess, user }) => {
               'content-type': 'application/ld+json'
             },
             body: JSON.stringify({
-            user: userResponse.userData.user.id,
-            roles: [...rolesToRemove]
+            firstEntityId: userResponse.userData.user.id,
+            secondEntityIds: [...rolesToRemove]
             }),
           };
 
           // On requête l'API pour retirer la ou les ancienne(s) association(s) user / role
-          await fetchData('http://localhost:8000/api/user_roles', userRoleDeleteOptions);
+          const { data: roleDeleteData } = await fetchData('http://localhost:8000/api/user_roles', userRoleDeleteOptions);
+
+          if(roleDeleteData.token) {
+        
+            /* 
+              Stockage de l'objet authToken dans le LocalStorage et 
+              Maj des valeurs partagées par le context AuthContext
+            */
+            updateUserAuth(roleDeleteData.token);
+          }
         }
       }
       console.log('userResponse pour la fin vaut : ', userResponse);

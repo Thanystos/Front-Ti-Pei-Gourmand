@@ -113,7 +113,7 @@ function handleDeleteRequest(url, data, response, cache, updateCache, options) {
     handleCompositionDeleteRequestLogic(url, data, cache, updateCache)
   }
 
-  return { response };
+  return { data, response };
 }
 
 

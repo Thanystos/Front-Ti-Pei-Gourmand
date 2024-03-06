@@ -36,6 +36,9 @@ const Login = () => {
   const location = useLocation();
   const errorMessage = location.state?.errorMessage;
 
+  // Permet de déterminer quel type de message d'erreur je dois afficher
+  const messageToshow = errors.length === 0 ? errorMessage : errors;
+
   // Requête l'API à la soumission du formulaire
   const handleSubmit = async (e) => {
 
@@ -108,8 +111,8 @@ const Login = () => {
                   <label htmlFor="floatingPassword">Mot de passe</label>
                 </Form.Floating>
                 <Button type="submit" className="btn btn-primary py-3 w-100">Connexion</Button>
-                {(errors ?? errorMessage) && (
-                  <p className="text-primary text-center mt-4 mb-0">{errors ?? errorMessage}</p>
+                {messageToshow && (
+                  <p className="text-primary text-center mt-4 mb-0">{messageToshow}</p>
                 )}
               </Form>
             </div>
