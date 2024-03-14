@@ -1,77 +1,47 @@
-import { jwtDecode } from 'jwt-decode';
-import { createContext, useEffect, useState } from 'react';
+import { createContext, useState } from 'react';
+import { useApiRequest, useAssociativeEntityUpdater, useAuth, useCache, useModal }  from '../hooks';
+import SpinnerWrapper from '../../composants/SpinnerWrapper';
 
-export const AuthContext = createContext();
+export const ApiContext = createContext();
 
-export const AuthProvider = ({ children }) => {
+// Permet de partager mes Hooks et States entre mes composants
+export const ApiProvider = ({ children }) => {
 
-  // Les states qui seront partagés entre mes composants
-  const [authToken, setAuthToken] = useState('');
-  const [authRoles, setAuthRoles] = useState('');
-  const [authUser, setAuthUser] = useState('');
+  // State permettant de gérer l'affichage du loading
+  const [isLoading, setIsLoading] = useState(false);
 
-  const updateUserAuth = (authToken, authRoles = null, authUser = null, isRetrievedFromLS = false) => {
-    
-    // Si on ne possède ni les authRoles ni les authUser
-    if (!authRoles && !authUser) {
+  // Hook permettant la construction du cache
+  const { cache, updateCache } = useCache();
 
-      // On ne set le token dans le LS que si il n'y existe pas encore
-      if(!isRetrievedFromLS) {
+  // Hook permettant l'appel à l'API et se servant du hook du cache pour construire ce dernier une fois la réponse obtenue
+  const { errors, setErrors, fetchData } = useApiRequest(cache, updateCache);
 
-        // Stockage de l'objet authToken dans le LocalStorage
-        localStorage.setItem('authToken', authToken);
-      }
-      
-      // Récupération des rôles associés au token
-      const decodedToken = jwtDecode(authToken);
-      authRoles = decodedToken.roles || '';
-      console.log('Nouveaux authRoles : ', authRoles);
+  // Hook permettant la mise à jour des informations du User connecté en se servant du cache qu'il devra parfois mettre à jour grâce au hook d'appel API
+  const { authToken, authRoles, authUser, authPermissions, updateUserAuth } = useAuth(setIsLoading, cache, fetchData);
 
-      // Récupération du username associé au token
-      authUser = decodedToken.username;
-    }
+  // Hook permettant de requêter l'API et d'enregistrer ou de supprimer des associations d'entités entraînant parfois la mise à jour des informations du User connecté
+  const { isArraySuperset, updateAssociativeEntity } = useAssociativeEntityUpdater(fetchData, authToken, updateUserAuth);
 
-    setAuthToken(authToken);
-    setAuthRoles(authRoles);
-    setAuthUser(authUser);
-  };
-
-  /* Permet de récupérer le token d'id et les authRoles 
-     dans le LS en cas de rechargement de l'application
-  */
-  useEffect(() => {
-    const storedToken = localStorage.getItem('authToken');
-    if (storedToken) {
-      updateUserAuth(storedToken, null, null, true);
-    }
-  }, []);
-
+  //console.log('Montage du Provider');
   return (
-    <AuthContext.Provider value={{ authToken, authRoles, authUser, updateUserAuth, }}>
+    <ApiContext.Provider value={{ isLoading, setIsLoading, cache, updateCache, errors, setErrors, fetchData, authToken, authRoles, authUser, authPermissions, updateUserAuth, isArraySuperset, updateAssociativeEntity }}>
+      
       {children}
-    </AuthContext.Provider>
+    </ApiContext.Provider>
   );
 };
 
-export const CacheContext = createContext();
 
-export const CacheProvider = ({ children }) => {
+export const ModalManagementContext = createContext();
 
-  // State contenant la réponse de mes requêtes GET
-  const [cache, setCache] = useState({});
+export const ModalManagementProvider = ({ children }) => {
 
-  // Méthode, à partager, permettant de mettre à jour le contenu de la réponse pour la ressource identifiée par l'url
-  const updateCache = (url, data) => {
-    
-      setCache(prevCache => ({
-        ...prevCache,
-        [url]: data,
-      }));
-  }
+  // Hook chargé de gérer l'état des modales
+  const { handleSuccessInModal } = useModal();
 
   return (
-    <CacheContext.Provider value={{ cache, updateCache }} >
+    <ModalManagementContext.Provider value={{ handleSuccessInModal }}>
       {children}
-    </CacheContext.Provider>
+    </ModalManagementContext.Provider>
   );
 };

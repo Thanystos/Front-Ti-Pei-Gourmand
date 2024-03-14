@@ -4,52 +4,44 @@ import { useNavigate } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUserEdit } from '@fortawesome/free-solid-svg-icons';
-import useApiRequest from '../../utils/hooks';
-import { useAuth } from '../../utils/hooks';
+import { useApi } from '../../utils/hooks';
 import SpinnerWrapper from '../../composants/SpinnerWrapper';
+import { effect, signal } from '@preact/signals-react';
+import { useSignal } from '@preact/signals-react/runtime';
 
 const Login = () => {
 
-  // Méthode de maj des informations d'authentification. Partagée par un provider.
-  const { updateUserAuth } = useAuth();
+  // States et méthodes partagés par mon provider
+  const { errors, fetchData, updateUserAuth } = useApi();
 
   // States récupérant le contenu des champs du même nom du formulaire
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-
-  // State affichant ou non le spinner par dessus la page pendant 1s
-  const [showSpinner, setShowSpinner] = useState(true);
+  const username = useSignal('');
+  const password = useSignal('');
 
   // State permettant de gérer le spinner de chargement
-  const [isLoading, setIsLoading] = useState(false);
+  const isLoading = useSignal(true)
 
   // Permet la redirection
   const navigate = useNavigate();
 
-  /* 
-    Utilisation d'un hook pour la requête API
-    Récupération des states du hook et de la méthode de requête
-  */
-  const { errors, fetchData } = useApiRequest();
-
-  // Permet de récupérer le message lié à la redirection vers le Login
+  // Permet de récupérer le message d'erreur lié à l'invalidité du token d'id
   const location = useLocation();
   const errorMessage = location.state?.errorMessage;
 
-  // Permet de déterminer quel type de message d'erreur je dois afficher
+  // Détermine, si l'erreur est liée à l'invalidité du token d'id ou autre
   const messageToshow = errors.length === 0 ? errorMessage : errors;
 
   // Requête l'API à la soumission du formulaire
   const handleSubmit = async (e) => {
 
-    // Mes requêtes vont s'effectuer, j'affiche mon loading
-    setIsLoading(true);
-
     // On retire le comportement par défaut du formulaire
     e.preventDefault();
-  
+
+    // Mes requêtes vont s'effectuer, j'affiche mon loading
+    //setIsLoading(true);
+
     // Informations nécessaires pour la requête
-    const options = {
+    const loginOptions = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -57,43 +49,54 @@ const Login = () => {
       body: JSON.stringify({ username, password }),
     };
   
-    // Interroge l'API en matchant les ids du formulaire et les utilisateurs enregistrés
-    const { data } = await fetchData('http://localhost:8000/api/login', options, true);
+    // Interroge l'API lui demandant de fournir le token d'id lié au User identifié par le formulaire
+    const { data } = await fetchData('http://localhost:8000/api/login', loginOptions, true);
 
-    // La réponse est disponible, je retire le loading
-    setIsLoading(false);
+    // Si le User est trouvé son token d'id sera disponible
+    if(data.token) {
+      console.log('1');
 
-    if (!data) {
-      return;
-    }
-
-    // En cas d'identifiants reconnus
-    if (data.token) {
-
-      /* 
-        Stockage de l'objet authToken dans le LocalStorage et 
-        Maj des valeurs partagées par le context AuthContext
-      */
+      // Permet d'obtenir toutes les informations d'identification du user
       updateUserAuth(data.token);
 
       // Redirection vers la page d'administration
       navigate('/admin');
     }
+    else {
+
+      // Si ce n'est pas le cas on retire le loading
+      //setIsLoading(false);
+      return;
+    }
   };
 
-  // Affiche le spinner pendant 1s quand le composant est monté afin de simuler un chargement de la page
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowSpinner(false);
+  // Affiche le spinner pendant 1s au montage initial (purement esthétique)
+  effect(() => {
+    console.log(isLoading.value);
+    const timeoutId = setTimeout(() => {
+      isLoading.value = false;
     }, 1000);
+  
+    return () => clearTimeout(timeoutId);
+  });
+  
+  
+  
 
-     // Nettoyage du timer pour éviter les fuites mémoire
-    return () => clearTimeout(timer);
-  }, []);
 
+  /* 
+    React me conseille de mettre en dépendance setIsLoading or le useeffect
+    ne doit se déclencher qu'au montage initial du composant. Je retire donc l'avertissement
+  */
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  
+
+  console.log('Montage du composant Login (2 fois initialement)');
   return (
+    
     <Container fluid className="position-relative d-flex p-0">
-      <SpinnerWrapper $showSpinner={showSpinner || isLoading} />
+      <p>isloading : {isLoading.value}</p>
+      <SpinnerWrapper $showSpinner={isLoading.value} />
       <Container fluid>
         <Row className="h-100 align-items-center justify-content-center" style={{ minHeight: '100vh' }}>
           <Col xs={12} sm={8} md={6} lg={5} xl={4}>
@@ -103,11 +106,11 @@ const Login = () => {
               </div>
               <Form onSubmit={handleSubmit}>
                 <Form.Floating className="mb-3">
-                  <Form.Control type="text" id="floatingInput"  value={username} onChange={(e) => setUsername(e.target.value)} required />
+                  <Form.Control type="text" id="floatingInput"  value={username} onInput={(e) => {username.value = e.target.value}} required />
                   <label htmlFor="floatingInput">Pseudonyme</label>
                 </Form.Floating>
                 <Form.Floating className="mb-4">
-                  <Form.Control type="password" id="floatingPassword" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                  <Form.Control type="password" id="floatingPassword" value={password} onInput={(e) => {password.value = e.target.value}} required />
                   <label htmlFor="floatingPassword">Mot de passe</label>
                 </Form.Floating>
                 <Button type="submit" className="btn btn-primary py-3 w-100">Connexion</Button>
@@ -119,7 +122,7 @@ const Login = () => {
           </Col>
         </Row>
       </Container>
-    </Container>
+    </Container>  
   );
 };
 

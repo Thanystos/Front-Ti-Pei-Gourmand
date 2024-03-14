@@ -6,15 +6,15 @@ import Admin from './pages/Admin';
 import './utils/style/bootstrap.min.css';
 import './utils/style/templateStyle.css';
 import './utils/style/font.css';
-import { AuthProvider, CacheProvider } from './utils/context';
+import { ApiProvider, ModalManagementProvider } from './utils/context';
 
 const rootElement = document.getElementById('root');
 
 const App = () => {
   return (
     <Router>
-      <CacheProvider>
-        <AuthProvider>
+      <ApiProvider>
+        <ModalManagementProvider>
           <Routes>
             <Route
               // la route /login monte le composant Login
@@ -27,8 +27,8 @@ const App = () => {
               element={<Admin />}
             />
           </Routes>
-        </AuthProvider>
-      </CacheProvider>
+        </ModalManagementProvider>
+      </ApiProvider>
     </Router>
   );
 };

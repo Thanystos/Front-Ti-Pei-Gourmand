@@ -1,86 +1,59 @@
 import React, { useEffect, useState } from 'react';
-import { useApiRequest, useAuth, useCache, useModal } from '../../../utils/hooks';
-import SpinnerWrapper from '../../SpinnerWrapper';
+import { useApi, useModalManagement } from '../../../utils/hooks';
 import { Button, Form, Modal } from 'react-bootstrap';
 import { getUserRoles, getCurrentDate, stringToDate } from '../../../utils/helpers/adminUserAddAndEditModal';
+import SpinnerWrapper from '../../SpinnerWrapper';
 
 const AdminUserAddAndEditModal = ({ handleClose, handleSuccess, user }) => {
 
-  const { cache } = useCache();
-  const { authToken, updateUserAuth } = useAuth();
+  // States et méthodes partagés par mes providers
+  const { cache, errors, fetchData, authToken, updateUserAuth, updateAssociativeEntity } = useApi();
+  const { handleSuccessInModal } = useModalManagement();
 
-  // States récupérant le contenu des champs du même nom du formulaire
-  const [username, setUsername] = useState(user ? user.username : '');
-  const [realName, setRealName] = useState(user ? user.realName : '');
-  const [password, setPassword] = useState('');
-  const [email, setEmail] = useState(user ? user.email : '');
-  const [phoneNumber, setPhoneNumber] = useState(user ? user.phoneNumber : '');
-  const [employmentStatus, setEmploymentStatus] = useState(user ? user.employmentStatus : '');
-  const [socialSecurityNumber, setSocialSecurityNumber] = useState(user ? user.socialSecurityNumber : '');
-  const [comments, setComments] = useState(user ? user.comments : '');
-  const [imageFile, setImageFile] = useState(null);
-  const [imageName, setImageName] = useState('');
-  const [hireDate, setHireDate] = useState(user ? stringToDate(user.hireDate) : '');
-  const [endDate, setEndDate] = useState(user ? stringToDate(user.endDate) : '');
+
+   // States récupérant le contenu des champs du même nom du formulaire
+   const [username, setUsername] = useState(user ? user.username : '');
+   const [realName, setRealName] = useState(user ? user.realName : '');
+   const [password, setPassword] = useState('');
+   const [email, setEmail] = useState(user ? user.email : '');
+   const [phoneNumber, setPhoneNumber] = useState(user ? user.phoneNumber : '');
+   const [employmentStatus, setEmploymentStatus] = useState(user ? user.employmentStatus : '');
+   const [socialSecurityNumber, setSocialSecurityNumber] = useState(user ? user.socialSecurityNumber : '');
+   const [comments, setComments] = useState(user ? user.comments : '');
+   const [imageFile, setImageFile] = useState(null);
+   const [imageName, setImageName] = useState('');
+   const [hireDate, setHireDate] = useState(user ? stringToDate(user.hireDate) : '');
+   const [endDate, setEndDate] = useState(user ? stringToDate(user.endDate) : '');
 
   // State contenant l'id des rôles associés au User
-  const [userRoles, setUserRoles] = useState(new Set(user ? getUserRoles(user).map(role => role.id) : []));
+  const [userRoles, setUserRoles] = useState(user ? getUserRoles(user).map(role => role.id) : []);
   
-  // On copie l'état initial du state précédent pour suivre l'évolution des rôles attribués au User
-  const initialUserRoles = new Set(user ? getUserRoles(user).map(role => role.id) : []);
+  // On copie l'état initial du state des rôles associés au User
+  const initialUserRoles = user ? getUserRoles(user).map(role => role.id) : [];
 
   // State contenant l'intégralité des Rôles qu'il est possible d'attribuer
   const [allRoles, setAllRoles] = useState([]);
-  
-  // Utilisation du hook useApiRequest
-  const { errors, fetchData } = useApiRequest();
-
-  // Utilisation du hook useModal
-  const { handleSuccessInModal } = useModal();
 
   // Contient la réponse de la requête d'inscription ou de modification du User
   const [userResponse, setUserResponse] = useState(null);
 
-  // Détermine si un role est présent dans notre Set de roles
-  const isRoleSelected = (roleId) => userRoles.has(roleId);
-
-  // State permettant de gérer le spinner de chargement
   const [isLoading, setIsLoading] = useState(true);
 
-  // Détermine si 2 Set contiennent exactement les mêmes éléments
-  const isSuperset = (initialUserRoles, userRoles) => {
-    for (let elem of userRoles) {
-      if (!initialUserRoles.has(elem)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
+  // Détermine si un role est présent dans notre Set de roles
+  const isRoleSelected = (roleId) => userRoles.includes(roleId);
+  
   // Action à effectuer lorsque les rôles sont changés via les checkbox
-  const handlerolesChange = (e) => {
-
-    // Récupère la valeur et l'état de mes checkbox
-    const { value, checked } = e.target;
+  const handlerolesChange = (roleName) => {
 
     // Récupère l'ID du rôle sélectionné
-    const roleId = allRoles.find(role => role.name === value)?.id;
-
-    if (!roleId) return; // Vérifie si l'ID du rôle existe, sinon arrête la fonction
-
-    // Crée une copie de l'ensemble des rôles de l'utilisateur
-    const updatedRoles = new Set(userRoles);
-
-    // Si la case vient d'être cochée, ajoute l'ID du rôle à l'ensemble
-    if (checked) {
-      updatedRoles.add(roleId);
-    } else {
-      // Si la case est décochée, retire l'ID du rôle de l'ensemble
-      updatedRoles.delete(roleId);
-    }
+    const roleId = allRoles.find(role => role.name === roleName)?.id;
 
     // Met à jour l'ensemble des rôles de l'utilisateur avec la copie mise à jour
-    setUserRoles(updatedRoles);
+    setUserRoles((prevUserRoles) => 
+      prevUserRoles.includes(roleId)
+        ? prevUserRoles.filter((role) => role !== roleId)
+        : [...prevUserRoles, roleId]
+    );
   };
 
   // Action à effectuer lorsque un fichier (image) est ajouté
@@ -168,13 +141,12 @@ const AdminUserAddAndEditModal = ({ handleClose, handleSuccess, user }) => {
         return;
       }
 
-      console.log('userdata : ', userData);
-
       if(userData.token) {
+        console.log('étrange');
         
         /* 
           Stockage de l'objet authToken dans le LocalStorage et 
-          Maj des valeurs partagées par le context AuthContext
+          Maj des valeurs partagées par le context ApiContext
         */
         updateUserAuth(userData.token);
       }
@@ -223,89 +195,20 @@ const AdminUserAddAndEditModal = ({ handleClose, handleSuccess, user }) => {
 
 
   useEffect(() => {
-    console.log('le useeffect se déclenche');
 
-    const fetchUserRoleDataAsync = async () => {
+    const fetchUserRoleData = async () => {
 
-      // Si mes 2 ensemble sont différents
-      if(!isSuperset(initialUserRoles, userRoles) || !isSuperset(userRoles, initialUserRoles)) {
+      await updateAssociativeEntity('user_roles', userResponse.userData.user.id, userRoles, initialUserRoles, true);
 
-        // Détermine les rôles ajoutés (présents dans userRoles mais pas dans initialUserRoles)
-        const rolesToAdd = new Set([...userRoles].filter(roleId => !initialUserRoles.has(roleId)));
-        
-        // Détermine les rôles retirés (présents dans initialUserRoles mais pas dans userRoles)
-        const rolesToRemove = new Set([...initialUserRoles].filter(roleId => !userRoles.has(roleId)));
-
-        // Si il y a de nouveaux rôles qui ont été ajoutés
-        if (rolesToAdd.size > 0) {
-          const userRolePostOptions = {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${authToken}`,
-              'content-type': 'application/ld+json'
-            },
-            body: JSON.stringify({
-              firstEntityId: userResponse.userData.user.id,
-              secondEntityIds: user ? [...rolesToAdd] : [...userRoles],
-
-              // La dernière opération nécessitant de créer un nouveau token, je peux savoir si c'est le cas grâce à cela
-              isLastMethod: rolesToRemove.size === 0,
-            }),
-          };
-  
-          console.log('mon cache entre les 2 requêtes vaut : ', cache);
-
-          // On requête l'API pour inscrire la ou les nouvelle(s) association(s) user / role
-          const { data: roleAddData } = await fetchData('http://localhost:8000/api/user_roles', userRolePostOptions);
-
-          if(roleAddData.token) {
-        
-            /* 
-              Stockage de l'objet authToken dans le LocalStorage et 
-              Maj des valeurs partagées par le context AuthContext
-            */
-            updateUserAuth(roleAddData.token);
-          }
-        }
-        
-        // Si des rôles ont été supprimés
-         if (rolesToRemove.size > 0) {
-          const userRoleDeleteOptions = {
-            method: 'DELETE',
-            headers: {
-              'Authorization': `Bearer ${authToken}`,
-              'content-type': 'application/ld+json'
-            },
-            body: JSON.stringify({
-            firstEntityId: userResponse.userData.user.id,
-            secondEntityIds: [...rolesToRemove]
-            }),
-          };
-
-          // On requête l'API pour retirer la ou les ancienne(s) association(s) user / role
-          const { data: roleDeleteData } = await fetchData('http://localhost:8000/api/user_roles', userRoleDeleteOptions);
-
-          if(roleDeleteData.token) {
-        
-            /* 
-              Stockage de l'objet authToken dans le LocalStorage et 
-              Maj des valeurs partagées par le context AuthContext
-            */
-            updateUserAuth(roleDeleteData.token);
-          }
-        }
-      }
-      console.log('userResponse pour la fin vaut : ', userResponse);
       handleSuccessInModal(userResponse.response, handleClose, handleSuccess, setIsLoading);
       
       setUserResponse(null);
     }
-
+    
     if(userResponse && cache['http://localhost:8000/api/users']) {
-      console.log('je remplis la condition');
-      console.log('userResponse vaut : ', userResponse);
-      console.log('le contenu de mon cache pour les users vaut : ', cache['http://localhost:8000/api/users']);
-      fetchUserRoleDataAsync();
+      console.log('jentre');
+
+      fetchUserRoleData();
     }
 
   }, [userResponse]);
@@ -345,146 +248,147 @@ const AdminUserAddAndEditModal = ({ handleClose, handleSuccess, user }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authToken]);
   
+  console.log('Montage du composant AdminUserAddAndEditModal');
   return (
     <>
       <SpinnerWrapper $showSpinner={isLoading} />
-        <Modal show={true} onHide={handleClose} centered>
-          <Modal.Header closeButton>
-            <Modal.Title className="modal-title">{user ? 'Édition ' : 'Ajout '}d'employé</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            <Form onSubmit={handleSubmit} encType='multipart/form-data'>
-              <Form.Group className="mb-3" controlId="username">
-                <Form.Label>Pseudonyme<span className='text-primary ml-2'>*</span></Form.Label>
-                <Form.Control type="text" onChange={(e) => setUsername(e.target.value)} value={username} required />
-                {errors.includes("duplicateUsername") && <p className="text-primary">Ce pseudonyme est déjà utilisé.</p>}
-                {errors.includes("emptyUsername") && <p className="text-primary">Le pseudonyme doit être spécifié.</p>}
-              </Form.Group>
+      <Modal show={true} onHide={handleClose} centered>
+        <Modal.Header closeButton>
+          <Modal.Title className="modal-title">{user ? 'Édition ' : 'Ajout '}d'employé</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form onSubmit={handleSubmit} encType='multipart/form-data'>
+            <Form.Group className="mb-3" controlId="username">
+              <Form.Label>Pseudonyme<span className='text-primary ml-2'>*</span></Form.Label>
+              <Form.Control type="text" onChange={(e) => setUsername(e.target.value)} value={username} required />
+              {errors.includes("duplicateUsername") && <p className="text-primary">Ce pseudonyme est déjà utilisé.</p>}
+              {errors.includes("emptyUsername") && <p className="text-primary">Le pseudonyme doit être spécifié.</p>}
+            </Form.Group>
 
-              <Form.Group className="mb-3" controlId="realname">
-                <Form.Label>Nom<span className='text-primary ml-2'>*</span></Form.Label>
-                <Form.Control type="text" onChange={(e) => setRealName(e.target.value)} value={realName} required />
-                {errors.includes("emptyRealName") && <p className="text-primary">Le nom doit être spécifié<div className=""></div></p>}
-              </Form.Group>
+            <Form.Group className="mb-3" controlId="realname">
+              <Form.Label>Nom<span className='text-primary ml-2'>*</span></Form.Label>
+              <Form.Control type="text" onChange={(e) => setRealName(e.target.value)} value={realName} required />
+              {errors.includes("emptyRealName") && <p className="text-primary">Le nom doit être spécifié<div className=""></div></p>}
+            </Form.Group>
 
-              <Form.Group className="mb-3" controlId="password">
-                <Form.Label>Mot de passe{!user && <span className='text-primary ml-2'>*</span>}</Form.Label>
-                <Form.Control 
-                  type="password" 
-                  onChange={(e) => setPassword(e.target.value)} 
-                  value={password} 
-                  required={user ? false : true}
-                />
-                {errors.includes("emptyPassword") && <p className="text-primary">Le mot de passe doit être spécifié.</p>}
-              </Form.Group>
+            <Form.Group className="mb-3" controlId="password">
+              <Form.Label>Mot de passe{!user && <span className='text-primary ml-2'>*</span>}</Form.Label>
+              <Form.Control 
+                type="password" 
+                onChange={(e) => setPassword(e.target.value)} 
+                value={password} 
+                required={user ? false : true}
+              />
+              {errors.includes("emptyPassword") && <p className="text-primary">Le mot de passe doit être spécifié.</p>}
+            </Form.Group>
 
-              <Form.Group className="mb-3">
-                <Form.Label>Rôles à attribuer<span className='text-primary ml-2'>*</span></Form.Label>
-                <div>
-                  {allRoles.map((role) => (
-                    <Form.Check
-                      type="checkbox"
-                      key={role.name}
-                      label={role.name}
-                      name={role.name}
-                      id={role.name}
-                      value={role.name}
+            <Form.Group className="mb-3">
+              <Form.Label>Rôles à attribuer<span className='text-primary ml-2'>*</span></Form.Label>
+              <div>
+                {allRoles.map((role) => (
+                  <Form.Check
+                    type="checkbox"
+                    key={role.name}
+                    label={role.name}
+                    name={role.name}
+                    id={role.name}
+                    value={role.name}
 
-                      // On se sert de notre fonction qui vérifie la présence de l'id dans notre Set de roles
-                      checked={isRoleSelected(role.id)}
-                      onChange={handlerolesChange}
-                    />
-                  ))}
-                </div>
-              </Form.Group>
-
-              <Form.Group className="mb-3" controlId="email">
-                <Form.Label>Email<span className='text-primary ml-2'>*</span></Form.Label>
-                <Form.Control type="email" onChange={(e) => setEmail(e.target.value)} value={email} required />
-                {errors.includes("emptyEmail") && <p className="text-primary">L'e-mail doit être spécifié.</p>}
-              </Form.Group>
-
-              <Form.Group className="mb-3" controlId="telephone">
-                <Form.Label>Téléphone<span className='text-primary ml-2'>*</span></Form.Label>
-                <Form.Control type="tel" onChange={(e) => setPhoneNumber(e.target.value)} value={phoneNumber} required />
-                {errors.includes("emptyPhoneNumber") && <p className="text-primary">Le numéro de téléphone doit être spécifié.</p>}
-              </Form.Group>
-
-              <Form.Group className="mb-3" controlId="hiredate">
-                <Form.Label>Date d'embauche</Form.Label>
-                <Form.Control 
-                  type="date" 
-                  onChange={(e) => setHireDate(e.target.value)} 
-                  value={hireDate} 
-                  max={getCurrentDate()} 
-                />
-              </Form.Group>
-
-              <Form.Group className="mb-3" controlId="enddate">
-                <Form.Label>Fin du contrat</Form.Label>
-                <Form.Control 
-                  type="date" 
-                  onChange={(e) => setEndDate(e.target.value)} 
-                  value={endDate} 
-                  min={getCurrentDate()} 
-                />
-              </Form.Group>
-
-              <Form.Group className="mb-3" controlId="employmentstatus">
-              <Form.Label>Type de contrat</Form.Label>
-                <Form.Select 
-                  className="mb-3" 
-                  aria-label="Type de contrat" 
-                  onChange={(e) => setEmploymentStatus(e.target.value)} 
-                  value={employmentStatus}
-                >
-                  <option value="" disabled={user !== null}>-----</option>
-                  <option value="CDI">CDI</option>
-                  <option value="CDD">CDD</option>
-                  <option value="Intérim">Intérim</option>
-                  <option value="Temps partiel">Temps partiel</option>
-                  <option value="Saisonnier">Saisonnier</option>
-                </Form.Select>
-              </Form.Group>
-
-              <Form.Group className="mb-3" controlId="socialsecuritynumber">
-                <Form.Label>N° Sécu</Form.Label>
-                <Form.Control 
-                  type="text" 
-                  maxLength={20} 
-                  onChange={(e) => setSocialSecurityNumber(e.target.value)} 
-                  value={socialSecurityNumber} 
-                />
-              </Form.Group>
-
-              <Form.Group className="mb-3" controlId="comments">
-                <Form.Label>Commentaires</Form.Label>
-                <Form.Control 
-                  as="textarea" 
-                  rows={3} 
-                  onChange={(e) => setComments(e.target.value)} 
-                  value={comments} 
-                />
-              </Form.Group>
-
-              <Form.Group className="mb-3" controlId="image">
-                <Form.Label>Image de profil</Form.Label>
-                <Form.Control type="file" onChange={handleImageChange} />
-              </Form.Group>
-
-              <div className="d-flex justify-content-center w-100">
-                <Button variant="success" size="sm" className="me-4" type="submit">
-                  Valider
-                </Button>
-
-                <Button variant="primary" size="sm" onClick={handleClose}>
-                  Annuler
-                </Button>
+                    // On se sert de notre fonction qui vérifie la présence de l'id dans notre Set de roles
+                    checked={isRoleSelected(role.id)}
+                    onChange={() => handlerolesChange(role.name)}
+                  />
+                ))}
               </div>
-            </Form>
-          </Modal.Body>
-        </Modal>
-    </>
+            </Form.Group>
+
+            <Form.Group className="mb-3" controlId="email">
+              <Form.Label>Email<span className='text-primary ml-2'>*</span></Form.Label>
+              <Form.Control type="email" onChange={(e) => setEmail(e.target.value)} value={email} required />
+              {errors.includes("emptyEmail") && <p className="text-primary">L'e-mail doit être spécifié.</p>}
+            </Form.Group>
+
+            <Form.Group className="mb-3" controlId="telephone">
+              <Form.Label>Téléphone<span className='text-primary ml-2'>*</span></Form.Label>
+              <Form.Control type="tel" onChange={(e) => setPhoneNumber(e.target.value)} value={phoneNumber} required />
+              {errors.includes("emptyPhoneNumber") && <p className="text-primary">Le numéro de téléphone doit être spécifié.</p>}
+            </Form.Group>
+
+            <Form.Group className="mb-3" controlId="hiredate">
+              <Form.Label>Date d'embauche</Form.Label>
+              <Form.Control 
+                type="date" 
+                onChange={(e) => setHireDate(e.target.value)} 
+                value={hireDate} 
+                max={getCurrentDate()} 
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3" controlId="enddate">
+              <Form.Label>Fin du contrat</Form.Label>
+              <Form.Control 
+                type="date" 
+                onChange={(e) => setEndDate(e.target.value)} 
+                value={endDate} 
+                min={getCurrentDate()} 
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3" controlId="employmentstatus">
+            <Form.Label>Type de contrat</Form.Label>
+              <Form.Select 
+                className="mb-3" 
+                aria-label="Type de contrat" 
+                onChange={(e) => setEmploymentStatus(e.target.value)} 
+                value={employmentStatus}
+              >
+                <option value="" disabled={user !== null}>-----</option>
+                <option value="CDI">CDI</option>
+                <option value="CDD">CDD</option>
+                <option value="Intérim">Intérim</option>
+                <option value="Temps partiel">Temps partiel</option>
+                <option value="Saisonnier">Saisonnier</option>
+              </Form.Select>
+            </Form.Group>
+
+            <Form.Group className="mb-3" controlId="socialsecuritynumber">
+              <Form.Label>N° Sécu</Form.Label>
+              <Form.Control 
+                type="text" 
+                maxLength={20} 
+                onChange={(e) => setSocialSecurityNumber(e.target.value)} 
+                value={socialSecurityNumber} 
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3" controlId="comments">
+              <Form.Label>Commentaires</Form.Label>
+              <Form.Control 
+                as="textarea" 
+                rows={3} 
+                onChange={(e) => setComments(e.target.value)} 
+                value={comments} 
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3" controlId="image">
+              <Form.Label>Image de profil</Form.Label>
+              <Form.Control type="file" onChange={handleImageChange} />
+            </Form.Group>
+
+            <div className="d-flex justify-content-center w-100">
+              <Button variant="success" size="sm" className="me-4" type="submit">
+                Valider
+              </Button>
+
+              <Button variant="primary" size="sm" onClick={handleClose}>
+                Annuler
+              </Button>
+            </div>
+          </Form>
+        </Modal.Body>
+      </Modal>
+    </> 
   );
 };
 

@@ -6,6 +6,7 @@ const allowedMethodsByURLForResource = {
 // Méthodes des ressources de composition autorisées à modifier le cache des ressources associées
 const allowedMethodsByURLForComposition = {
   'http://localhost:8000/api/user_roles': ['POST', 'DELETE'],
+  'http://localhost:8000/api/role_permissions': ['POST', 'DELETE'],
 }
 
 export function methodSelection(url, data, response, cache, updateCache, options) {
@@ -350,7 +351,9 @@ const getResourceIdFromUrl = (url) => {
 export function transformUrlFromComposition(url) {
   switch (url) {
       case 'http://localhost:8000/api/user_roles':
-          return 'http://localhost:8000/api/users';
+        return 'http://localhost:8000/api/users';
+      case 'http://localhost:8000/api/role_permissions':
+        return 'http://localhost:8000/api/roles';
       default:
           return url;
   }
@@ -363,8 +366,12 @@ function getResourceName(url) {
         return 'user';
       case 'http://localhost:8000/api/roles':
         return 'role';
+      case 'http://localhost:8000/api/permissions':
+        return 'permission'; 
       case 'http://localhost:8000/api/user_roles':
         return 'userRoles';
+      case 'http://localhost:8000/api/role_permissions':
+        return 'rolePermissions';
       default:
           return url;
   }

@@ -1,24 +1,28 @@
 import { faAngleDown, faKey, faLaptop, faUserEdit, faUserGear } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Nav, NavDropdown, Navbar } from 'react-bootstrap';
-import { useAuth } from '../../../utils/hooks/index'
+import { useApi } from '../../../utils/hooks/index'
 
 const AdminSidebar = ( { handleOptionClick }) => {
 
-  const { authRoles } = useAuth();
+  // State partagée par mon provider
+  const { authPermissions } = useApi();
 
+  // State permettant de gérer l'état de la liste déroulante
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
+  // Méthode déclenchée au clic sur la liste déroulante et inversant son état (ouvert)
   const handleDropdownClick = () => {
     setIsDropdownOpen(!isDropdownOpen);
   }
 
+  // Méthode déclenchée au clic sur un des éléments du menu et permettant de rendre le composant associé
   const onOptionClick = (option) => {
-    // Lorsqu'un élément de la sidebar est cliqué, appelez la fonction handleOptionClick de Admin
     handleOptionClick(option);
   };
 
+  console.log('montage du composant AdminSideBar');
   return (
     <div className="sidebar pe-4 pb-3">
       <Navbar bg="secondary" variant="dark" expand={false}>
@@ -36,10 +40,12 @@ const AdminSidebar = ( { handleOptionClick }) => {
           </div>
         </div>
         <Nav className="w-100">
-          {authRoles.includes('Administrateur') && (
+          {authPermissions.includes('Accès à la liste des employés') && (
             <Nav.Link href="#" className="nav-item nav-link active" onClick={() => onOptionClick('Gestion des utilisateurs')}><i className="me-2"><FontAwesomeIcon icon={faUserGear} /></i>Gestion employés</Nav.Link>
           )}
-          <Nav.Link href="#" className="nav-item nav-link active" onClick={() => onOptionClick('Gestion des roles')}><i className="me-2"><FontAwesomeIcon icon={faKey} /></i>Gestion roles</Nav.Link>
+           {authPermissions.includes('Accès à la liste des rôles et permissions associées') && (
+            <Nav.Link href="#" className="nav-item nav-link active" onClick={() => onOptionClick('Gestion des roles')}><i className="me-2"><FontAwesomeIcon icon={faKey} /></i>Gestion roles</Nav.Link>
+          )}
           <NavDropdown title={
             <span>
               <i className="me-2">
@@ -56,7 +62,6 @@ const AdminSidebar = ( { handleOptionClick }) => {
             <NavDropdown.Item href="typography.html">Typography</NavDropdown.Item>
             <NavDropdown.Item href="element.html">Other Elements</NavDropdown.Item>
           </NavDropdown>
-          
         </Nav>
       </Navbar>
     </div>

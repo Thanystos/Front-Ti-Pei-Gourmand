@@ -1,15 +1,13 @@
 import React, { useState } from 'react';
-import useApiRequest, { useModal } from '../../../utils/hooks';
+import { useApi, useModalManagement } from '../../../utils/hooks';
 import { Button, Modal } from 'react-bootstrap';
 import SpinnerWrapper from '../../SpinnerWrapper';
 
 const AdminUserDeleteModal = ({ selectedUsernames, setSelectedUsernames, authToken, handleClose, handleSuccess }) => {
 
   // Utilisation du hook useApiRequest
-  const { errors, fetchData } = useApiRequest();
-
-  // Utilisation du hook useModal
-  const { handleSuccessInModal } = useModal();
+  const { errors, fetchData } = useApi();
+  const { handleSuccessInModal } = useModalManagement();
 
   // State permettant de gérer le spinner de chargement
   const [isLoading, setIsLoading] = useState(false);

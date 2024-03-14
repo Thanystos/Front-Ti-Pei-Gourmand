@@ -2,20 +2,39 @@ import { faAngleDown, faBars } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useState } from "react";
 import { Dropdown, Nav, Navbar } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
 
 const AdminNavBar = () => {
+
+    // State permettant de gérer l'état de la liste déroulante
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
+    // Permet la redirection
+    const navigate = useNavigate();
+
+    // Méthode déclenchée au clic sur le bouton d'expansion et qui ajoute ou retire une classe affectant ainsi le style
     const handleSidebarToggle = () => {
         document.querySelectorAll('.sidebar, .content').forEach((el) => {
             el.classList.toggle('open');
         });
     }
 
+    // Méthode déclenchée au clic sur la liste déroulante et inversant son état (ouvert / fermé)
     const handleDropdownClick = () => {
         setIsDropdownOpen(!isDropdownOpen);
     }
-    return(
+
+    // Méthode déclenchée au clic sur l'élément du relatif à la déconnexion
+    const handleDisconnect = () => {
+
+        // Vide le LocalStorage supprimant ainsi les informations sur le User connecté
+        localStorage.clear();
+
+        // Redirige vers la page Login
+        navigate('/login');
+    }
+
+    return (
         <Navbar expand="lg" bg="secondary" variant="dark" className="navbar sticky-top px-4 py-0">
             <a href="#" className="sidebar-toggler flex-shrink-0" onClick={handleSidebarToggle}>
                 <FontAwesomeIcon icon={faBars} />
@@ -34,7 +53,7 @@ const AdminNavBar = () => {
                     <Dropdown.Menu className={`dropdown-menu-end bg-secondary border-0 rounded-0 rounded-bottom m-0 ${isDropdownOpen ? 'show' : ''}`}>
                         <Dropdown.Item href="#">My Profile</Dropdown.Item>
                         <Dropdown.Item href="#">Settings</Dropdown.Item>
-                        <Dropdown.Item href="#">Log Out</Dropdown.Item>
+                        <Dropdown.Item onClick={handleDisconnect}>Log Out</Dropdown.Item>
                     </Dropdown.Menu>
                 </Dropdown>
             </Nav>
