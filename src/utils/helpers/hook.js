@@ -1,6 +1,7 @@
 // Méthodes des ressources autorisées à modifier le cache
 const allowedMethodsByURLForResource = {
   'http://localhost:8000/api/users': ['POST', 'PUT', 'PATCH', 'DELETE'],
+  'http://localhost:8000/api/ingredients': ['POST', 'PUT', 'PATCH', 'DELETE'],
 };
 
 // Méthodes des ressources de composition autorisées à modifier le cache des ressources associées
@@ -367,7 +368,9 @@ function getResourceName(url) {
       case 'http://localhost:8000/api/roles':
         return 'role';
       case 'http://localhost:8000/api/permissions':
-        return 'permission'; 
+        return 'permission';
+      case 'http://localhost:8000/api/ingredients':
+        return 'ingredient'
       case 'http://localhost:8000/api/user_roles':
         return 'userRoles';
       case 'http://localhost:8000/api/role_permissions':

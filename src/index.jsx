@@ -10,7 +10,7 @@ import { ApiProvider, ModalManagementProvider } from './utils/context';
 
 const rootElement = document.getElementById('root');
 
-const App = () => {
+function App() {
   return (
     <Router>
       <ApiProvider>
@@ -31,6 +31,6 @@ const App = () => {
       </ApiProvider>
     </Router>
   );
-};
+}
 
 createRoot(rootElement).render(<App />);

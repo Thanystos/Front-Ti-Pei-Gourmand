@@ -3,7 +3,7 @@ import { Form, Container, Row, Col, Button } from 'react-bootstrap';
 import { useApi } from '../../../utils/hooks';
 import SpinnerWrapper from '../../SpinnerWrapper';
 
-const AdminRolePermissions = () => {
+const RoleTable = () => {
 
     /*
         Contient le token d'authentification et le username de l'utilisateur connecté.
@@ -143,6 +143,7 @@ const AdminRolePermissions = () => {
     const handleSubmit = async () => {
         const rolePermissionsId = rolePermissions.map((rolePermission) => rolePermission.id);
 
+        setIsLoading(true);
         await updateAssociativeEntity('role_permissions', selectedRoleId, rolePermissionsId, initialRolePermissionsId);
 
         setInitialRolePermissionsId(rolePermissionsId);
@@ -239,4 +240,4 @@ const AdminRolePermissions = () => {
     )   
 };
 
-export default AdminRolePermissions;
+export default RoleTable;

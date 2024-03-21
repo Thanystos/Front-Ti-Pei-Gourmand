@@ -8,7 +8,7 @@ export const ApiContext = createContext();
 export const ApiProvider = ({ children }) => {
 
   // State permettant de gérer l'affichage du loading
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Hook permettant la construction du cache
   const { cache, updateCache } = useCache();
@@ -25,7 +25,7 @@ export const ApiProvider = ({ children }) => {
   //console.log('Montage du Provider');
   return (
     <ApiContext.Provider value={{ isLoading, setIsLoading, cache, updateCache, errors, setErrors, fetchData, authToken, authRoles, authUser, authPermissions, updateUserAuth, isArraySuperset, updateAssociativeEntity }}>
-      
+      <SpinnerWrapper $showSpinner={isLoading} />
       {children}
     </ApiContext.Provider>
   );

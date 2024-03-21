@@ -4,26 +4,27 @@ import { Button, Form, Modal } from 'react-bootstrap';
 import { getUserRoles, getCurrentDate, stringToDate } from '../../../utils/helpers/adminUserAddAndEditModal';
 import SpinnerWrapper from '../../SpinnerWrapper';
 
-const AdminUserAddAndEditModal = ({ handleClose, handleSuccess, user }) => {
+const UserAddAndEditModal = ({ handleClose, handleSuccess, user }) => {
 
   // States et méthodes partagés par mes providers
   const { cache, errors, fetchData, authToken, updateUserAuth, updateAssociativeEntity } = useApi();
   const { handleSuccessInModal } = useModalManagement();
 
 
-   // States récupérant le contenu des champs du même nom du formulaire
-   const [username, setUsername] = useState(user ? user.username : '');
-   const [realName, setRealName] = useState(user ? user.realName : '');
-   const [password, setPassword] = useState('');
-   const [email, setEmail] = useState(user ? user.email : '');
-   const [phoneNumber, setPhoneNumber] = useState(user ? user.phoneNumber : '');
-   const [employmentStatus, setEmploymentStatus] = useState(user ? user.employmentStatus : '');
-   const [socialSecurityNumber, setSocialSecurityNumber] = useState(user ? user.socialSecurityNumber : '');
-   const [comments, setComments] = useState(user ? user.comments : '');
-   const [imageFile, setImageFile] = useState(null);
-   const [imageName, setImageName] = useState('');
-   const [hireDate, setHireDate] = useState(user ? stringToDate(user.hireDate) : '');
-   const [endDate, setEndDate] = useState(user ? stringToDate(user.endDate) : '');
+  const [formData, setFormData] = useState({
+    username: user ? user.username : '',
+    realName: user ? user.realName : '',
+    password: '',
+    email: user ? user.email : '',
+    phoneNumber: user ? user.phoneNumber : '',
+    employmentStatus: user ? user.employmentStatus : '',
+    socialSecurityNumber: user ? user.socialSecurityNumber : '',
+    comments: user ? user.comments : '',
+    imageFile: null,
+    imageName: '',
+    hireDate: user ? stringToDate(user.hireDate) : '',
+    endDate: user ? stringToDate(user.endDate) : '',
+  });
 
   // State contenant l'id des rôles associés au User
   const [userRoles, setUserRoles] = useState(user ? getUserRoles(user).map(role => role.id) : []);
@@ -62,11 +63,12 @@ const AdminUserAddAndEditModal = ({ handleClose, handleSuccess, user }) => {
     // On récupère le fichier du passé
     const file = e.target.files[0];
 
-    // On met à jour notre state avec le contenu du fichier
-    setImageFile(file);
-
-    // On met à jour notre state avec le nom du fichier
-    setImageName(file.name);
+    // On met à jour notre state avec le contenu du fichier et son nom
+    setFormData(prevFormData => ({
+      ...prevFormData,
+      imageFile: file,
+      imageName: file.name,
+    }));
   };
 
   // Requête l'API à la soumission du formulaire
@@ -79,7 +81,7 @@ const AdminUserAddAndEditModal = ({ handleClose, handleSuccess, user }) => {
     e.preventDefault();
 
     // Il faut obligatoirement qu'un rôle ait été attribué sinon on sort et on empêche le submit
-    if(userRoles.size  === 0) {
+    if(userRoles.length  === 0) {
       alert('Veuillez sélectionner au moins un rôle.');
 
       // Je retire le loading
@@ -88,14 +90,14 @@ const AdminUserAddAndEditModal = ({ handleClose, handleSuccess, user }) => {
     }
 
     // Contiendra le fichier. FormData est obligatoire pour pouvoir le transmettre à l'API
-    const formData = new FormData();
+    const ImageformData = new FormData();
 
     // Si une image a été spécifiée
-    if(imageFile !== null) {
+    if(formData.imageFile !== null) {
 
       // On construit notre formData avec les informations de cette dernière
-      formData.append('image', imageFile);
-      formData.append('imageName', imageName);
+      ImageformData.append('image', formData.imageFile);
+      ImageformData.append('imageName', formData.imageName);
     }
 
     const isPostMethod = !user;
@@ -108,19 +110,19 @@ const AdminUserAddAndEditModal = ({ handleClose, handleSuccess, user }) => {
         'content-type': 'application/ld+json'
       },
       body: JSON.stringify({ 
-        username,
-        password,
-        realName,
-        phoneNumber,
-        email,
-        hireDate: (hireDate === "" || hireDate === "NaN-NaN-NaN") ? null : hireDate,
-        endDate: (endDate === "" || endDate === "NaN-NaN-NaN") ? null : endDate,
-        employmentStatus,
-        socialSecurityNumber,
-        comments,
-
+        username: formData.username,
+        password: formData.password,
+        realName: formData.realName,
+        phoneNumber: formData.phoneNumber,
+        email: formData.email,
+        hireDate: (formData.hireDate === "" || formData.hireDate === "NaN-NaN-NaN") ? null : formData.hireDate,
+        endDate: (formData.endDate === "" || formData.endDate === "NaN-NaN-NaN") ? null : formData.endDate,
+        employmentStatus: formData.employmentStatus,
+        socialSecurityNumber: formData.socialSecurityNumber,
+        comments: formData.comments,
+      
         // Ajoute hasImage seulement si la méthode est POST 
-        hasImage: isPostMethod ? !!imageFile : undefined,
+        hasImage: isPostMethod ? !!formData.imageFile : undefined,
       }),
     };
 
@@ -163,7 +165,7 @@ const AdminUserAddAndEditModal = ({ handleClose, handleSuccess, user }) => {
 
       
       // Si une image a été spécifiée
-      if (imageFile !== null) {
+      if (formData.imageFile !== null) {
 
         const imagePostOptions = {
           method: 'POST',
@@ -260,14 +262,14 @@ const AdminUserAddAndEditModal = ({ handleClose, handleSuccess, user }) => {
           <Form onSubmit={handleSubmit} encType='multipart/form-data'>
             <Form.Group className="mb-3" controlId="username">
               <Form.Label>Pseudonyme<span className='text-primary ml-2'>*</span></Form.Label>
-              <Form.Control type="text" onChange={(e) => setUsername(e.target.value)} value={username} required />
+              <Form.Control type="text" onChange={(e) => setFormData({...formData, username: e.target.value})} value={formData.username} required />
               {errors.includes("duplicateUsername") && <p className="text-primary">Ce pseudonyme est déjà utilisé.</p>}
               {errors.includes("emptyUsername") && <p className="text-primary">Le pseudonyme doit être spécifié.</p>}
             </Form.Group>
 
             <Form.Group className="mb-3" controlId="realname">
               <Form.Label>Nom<span className='text-primary ml-2'>*</span></Form.Label>
-              <Form.Control type="text" onChange={(e) => setRealName(e.target.value)} value={realName} required />
+              <Form.Control type="text" onChange={(e) => setFormData({...formData, realName: e.target.value})} value={formData.realName} required />
               {errors.includes("emptyRealName") && <p className="text-primary">Le nom doit être spécifié<div className=""></div></p>}
             </Form.Group>
 
@@ -275,8 +277,8 @@ const AdminUserAddAndEditModal = ({ handleClose, handleSuccess, user }) => {
               <Form.Label>Mot de passe{!user && <span className='text-primary ml-2'>*</span>}</Form.Label>
               <Form.Control 
                 type="password" 
-                onChange={(e) => setPassword(e.target.value)} 
-                value={password} 
+                onChange={(e) => setFormData({...formData, password: e.target.value})} 
+                value={formData.password} 
                 required={user ? false : true}
               />
               {errors.includes("emptyPassword") && <p className="text-primary">Le mot de passe doit être spécifié.</p>}
@@ -304,32 +306,27 @@ const AdminUserAddAndEditModal = ({ handleClose, handleSuccess, user }) => {
 
             <Form.Group className="mb-3" controlId="email">
               <Form.Label>Email<span className='text-primary ml-2'>*</span></Form.Label>
-              <Form.Control type="email" onChange={(e) => setEmail(e.target.value)} value={email} required />
+              <Form.Control type="email" onChange={(e) => setFormData({...formData, email: e.target.value})} value={formData.email} required />
               {errors.includes("emptyEmail") && <p className="text-primary">L'e-mail doit être spécifié.</p>}
             </Form.Group>
 
             <Form.Group className="mb-3" controlId="telephone">
               <Form.Label>Téléphone<span className='text-primary ml-2'>*</span></Form.Label>
-              <Form.Control type="tel" onChange={(e) => setPhoneNumber(e.target.value)} value={phoneNumber} required />
+              <Form.Control type="tel" onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})} value={formData.phoneNumber} required />
               {errors.includes("emptyPhoneNumber") && <p className="text-primary">Le numéro de téléphone doit être spécifié.</p>}
             </Form.Group>
 
             <Form.Group className="mb-3" controlId="hiredate">
               <Form.Label>Date d'embauche</Form.Label>
-              <Form.Control 
-                type="date" 
-                onChange={(e) => setHireDate(e.target.value)} 
-                value={hireDate} 
-                max={getCurrentDate()} 
-              />
+              <Form.Control type="date" onChange={(e) => setFormData({...formData, hireDate: e.target.value})} value={formData.hireDate} max={getCurrentDate()} />
             </Form.Group>
 
             <Form.Group className="mb-3" controlId="enddate">
               <Form.Label>Fin du contrat</Form.Label>
               <Form.Control 
                 type="date" 
-                onChange={(e) => setEndDate(e.target.value)} 
-                value={endDate} 
+                onChange={(e) => setFormData({...formData, endDate: e.target.value})} 
+                value={formData.endDate} 
                 min={getCurrentDate()} 
               />
             </Form.Group>
@@ -339,8 +336,8 @@ const AdminUserAddAndEditModal = ({ handleClose, handleSuccess, user }) => {
               <Form.Select 
                 className="mb-3" 
                 aria-label="Type de contrat" 
-                onChange={(e) => setEmploymentStatus(e.target.value)} 
-                value={employmentStatus}
+                onChange={(e) => setFormData({...formData, employmentStatus: e.target.value})} 
+                value={formData.employmentStatus}
               >
                 <option value="" disabled={user !== null}>-----</option>
                 <option value="CDI">CDI</option>
@@ -356,8 +353,8 @@ const AdminUserAddAndEditModal = ({ handleClose, handleSuccess, user }) => {
               <Form.Control 
                 type="text" 
                 maxLength={20} 
-                onChange={(e) => setSocialSecurityNumber(e.target.value)} 
-                value={socialSecurityNumber} 
+                onChange={(e) => setFormData({...formData, socialSecurityNumber: e.target.value})} 
+                value={formData.socialSecurityNumber} 
               />
             </Form.Group>
 
@@ -366,8 +363,8 @@ const AdminUserAddAndEditModal = ({ handleClose, handleSuccess, user }) => {
               <Form.Control 
                 as="textarea" 
                 rows={3} 
-                onChange={(e) => setComments(e.target.value)} 
-                value={comments} 
+                onChange={(e) => setFormData({...formData, comments: e.target.value})} 
+                value={formData.comments} 
               />
             </Form.Group>
 
@@ -392,4 +389,4 @@ const AdminUserAddAndEditModal = ({ handleClose, handleSuccess, user }) => {
   );
 };
 
-export default AdminUserAddAndEditModal;
+export default UserAddAndEditModal;

@@ -21,6 +21,19 @@ export const getLabelForColumn = (columnName) => {
         return 'N° Sécu';
       case 'comments':
         return 'Commentaires';
+
+      /* -------------------------------------------------- */
+
+      case 'quantity':
+        return 'Quantité';
+      case 'percentQuantity':
+        return '%';
+      case 'unit':
+        return 'Unité';
+      case 'category':
+        return 'Catégorie';
+      case 'isAllergen':
+        return 'Allergène ?';
       default:
         return '';
     }
@@ -53,31 +66,56 @@ export const getRolesName = (user) => {
 // Permet de déterminer la valeur à renvoyer en cas de problème
 export const getDefaultIfUndefined = (value) => (value !== undefined) && (value !== '') ? value : 'À définir';
 
-export const getColumnValue = (user, column) => {
+export const getColumnValue = (entry, column) => {
     switch (column) {
       case 'username':
-        return user.username;
+        return entry.username;
       case 'realName':
-        return user.realName;
+        return entry.realName;
       case 'phoneNumber':
-        return user.phoneNumber;
+        return entry.phoneNumber;
       case 'email':
-        return user.email;
+        return entry.email;
       case 'hireDate':
-        return getDefaultIfUndefined(calculateMonthsOfService(user.hireDate));
+        return getDefaultIfUndefined(calculateMonthsOfService(entry.hireDate));
       case 'roles':
-        return getRolesName(user).join(' / ');
+        return getRolesName(entry).join(' / ');
       case 'endDate':
-        return getDefaultIfUndefined(user.endDate) !== 'À définir'
-          ? new Date(user.endDate).toLocaleDateString()
+        return getDefaultIfUndefined(entry.endDate) !== 'À définir'
+          ? new Date(entry.endDate).toLocaleDateString()
           : 'À définir';
       case 'employmentStatus':
-        return getDefaultIfUndefined(user.employmentStatus);
+        return getDefaultIfUndefined(entry.employmentStatus);
       case 'socialSecurityNumber':
-        return getDefaultIfUndefined(user.socialSecurityNumber);
+        return getDefaultIfUndefined(entry.socialSecurityNumber);
       case 'comments':
-        return getDefaultIfUndefined(user.comments);
+        return getDefaultIfUndefined(entry.comments);
+
+      /* -------------------------------------------------- */
+
+      case 'title':
+        return entry.title;
+      case 'quantity':
+        return entry.quantity + ' / ' + entry.maxQuantity;
+      case 'percentQuantity':
+        return entry.percentQuantity;
+      case 'unit':
+        return entry.unit;
+      case 'category':
+        return entry.category;
+      case 'isAllergen':
+        return entry.isAllergen ? 'Oui' : 'Non';
       default:
         return '';
     }
   };
+
+export const getTextColorClass = (percentQuantity) => {
+  if (percentQuantity >= 50) {
+    return 'text-success'; // Vert
+  } else if (percentQuantity > 20) {
+    return 'text-warning'; // Jaune
+  } else {
+    return 'text-danger'; // Rouge
+  }
+};

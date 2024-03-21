@@ -3,14 +3,26 @@ import { useApi, useModalManagement } from '../../../utils/hooks';
 import { Button, Modal } from 'react-bootstrap';
 import SpinnerWrapper from '../../SpinnerWrapper';
 
-const AdminUserDeleteModal = ({ selectedUsernames, setSelectedUsernames, authToken, handleClose, handleSuccess }) => {
+const GenericDeleteModal = ({ name, selectedEntries, setSelectedEntries, handleClose, handleSuccess }) => {
 
   // Utilisation du hook useApiRequest
-  const { errors, fetchData } = useApi();
+  const { errors, fetchData, authToken } = useApi();
   const { handleSuccessInModal } = useModalManagement();
+  console.log('selectedEntries : ', selectedEntries)
 
   // State permettant de gérer le spinner de chargement
   const [isLoading, setIsLoading] = useState(false);
+
+  const getBodyContent = () => {
+    switch(name) {
+        case 'users':
+            return {usernames: selectedEntries}
+        case 'ingredients':
+            return {titles: selectedEntries}
+        default:
+            return '';
+    }
+  }
   
 
   // Méthode permettant l'appel API
@@ -25,11 +37,11 @@ const AdminUserDeleteModal = ({ selectedUsernames, setSelectedUsernames, authTok
         'Authorization': `Bearer ${authToken}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ usernames: selectedUsernames }),
+      body: JSON.stringify(getBodyContent()),
     };
     
-    // Interroge l'API en demandant la suppression de tous les Users de selectedUsernames
-    const { response } = await fetchData('http://localhost:8000/api/users', options)
+    // Interroge l'API en demandant la suppression de tous les Users de selectedEntries
+    const { response } = await fetchData(`http://localhost:8000/api/${name}`, options)
     
     if (!response.ok) {
       setIsLoading(false);
@@ -39,7 +51,7 @@ const AdminUserDeleteModal = ({ selectedUsernames, setSelectedUsernames, authTok
     handleSuccessInModal(response, handleClose, handleSuccess, setIsLoading);
 
     // Vide le tableau des utilisateurs à supprimer
-    setSelectedUsernames([]);
+    setSelectedEntries([]);
   };
 
   return (
@@ -47,15 +59,16 @@ const AdminUserDeleteModal = ({ selectedUsernames, setSelectedUsernames, authTok
       <SpinnerWrapper $showSpinner={isLoading} />
         <Modal show={true} onHide={handleClose} centered>
           <Modal.Header closeButton>
-            <Modal.Title className="modal-title">Suppression d'employé</Modal.Title>
+            
+            <Modal.Title className="modal-title">Suppression {`${name === 'users' ? 'd\'employé' : name === 'ingredients' ? 'd\'ingrédient' : ``}`}</Modal.Title>
           </Modal.Header>
           <Modal.Body className='text-center'>
-            <p>Voulez-vous supprimer le ou les employés ?</p>
+            <p>Voulez-vous supprimer le ou les {`${name === 'users' ? 'employés' : name === 'ingredients' ? 'ingrédients' : ``}`} ?</p>
             <p>
-              {selectedUsernames.map((username, index) => (
+              {selectedEntries.map((username, index) => (
                 <React.Fragment key={username}>
                   {username}
-                  {index !== selectedUsernames.length - 1 && <br />}
+                  {index !== selectedEntries.length - 1 && <br />}
                 </React.Fragment>
               ))}
             </p>
@@ -76,4 +89,4 @@ const AdminUserDeleteModal = ({ selectedUsernames, setSelectedUsernames, authTok
   );
 }
 
-export default AdminUserDeleteModal;
+export default GenericDeleteModal;

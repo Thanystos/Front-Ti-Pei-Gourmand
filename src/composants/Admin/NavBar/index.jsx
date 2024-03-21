@@ -3,8 +3,11 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useState } from "react";
 import { Dropdown, Nav, Navbar } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
+import { useApi } from "../../../utils/hooks";
 
-const AdminNavBar = () => {
+const NavBar = () => {
+
+    const { setErrors, authUser } = useApi();
 
     // State permettant de gérer l'état de la liste déroulante
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -27,6 +30,8 @@ const AdminNavBar = () => {
     // Méthode déclenchée au clic sur l'élément du relatif à la déconnexion
     const handleDisconnect = () => {
 
+        setErrors([]);
+
         // Vide le LocalStorage supprimant ainsi les informations sur le User connecté
         localStorage.clear();
 
@@ -36,14 +41,14 @@ const AdminNavBar = () => {
 
     return (
         <Navbar expand="lg" bg="secondary" variant="dark" className="navbar sticky-top px-4 py-0">
-            <a href="#" className="sidebar-toggler flex-shrink-0" onClick={handleSidebarToggle}>
+            <Nav.Link href="#" className="sidebar-toggler flex-shrink-0" onClick={handleSidebarToggle}>
                 <FontAwesomeIcon icon={faBars} />
-            </a>
+            </Nav.Link>
             <Nav className="navbar-nav align-items-center ms-auto">
                 <Dropdown className="nav-item dropdown" onClick={handleDropdownClick}>
                     <Dropdown.Toggle className="nav-link dropdown-toggle" variant="transparent" id="dropdown-profile">
                         <img className="rounded-circle me-lg-2" src="img/user.jpg" alt="" style={{ width: '40px', height: '40px' }} />
-                        <span className="d-none d-lg-inline-flex">John Doe</span>
+                        <span className="d-none d-lg-inline-flex">{authUser}</span>
                         <FontAwesomeIcon 
                             icon={faAngleDown}
                             size='sm'
@@ -61,4 +66,4 @@ const AdminNavBar = () => {
     );
 };
 
-export default AdminNavBar;
+export default NavBar;

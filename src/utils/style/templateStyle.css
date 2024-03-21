@@ -281,3 +281,7 @@
 .modal-title {
     color: #6C7293;
 }
+
+.sortable {
+    cursor: pointer;
+}

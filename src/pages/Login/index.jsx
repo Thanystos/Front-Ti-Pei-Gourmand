@@ -1,25 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { Button, Col, Container, Form, Row } from 'react-bootstrap';
-import { useNavigate } from 'react-router-dom';
-import { useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUserEdit } from '@fortawesome/free-solid-svg-icons';
 import { useApi } from '../../utils/hooks';
 import SpinnerWrapper from '../../composants/SpinnerWrapper';
-import { effect, signal } from '@preact/signals-react';
-import { useSignal } from '@preact/signals-react/runtime';
 
 const Login = () => {
 
   // States et méthodes partagés par mon provider
-  const { errors, fetchData, updateUserAuth } = useApi();
+  const {setIsLoading, errors, fetchData, updateUserAuth } = useApi();
 
   // States récupérant le contenu des champs du même nom du formulaire
-  const username = useSignal('');
-  const password = useSignal('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
 
   // State permettant de gérer le spinner de chargement
-  const isLoading = useSignal(true)
+  const [isLoadingLogin, setIsLoadingLogin] = useState(true);
 
   // Permet la redirection
   const navigate = useNavigate();
@@ -38,7 +35,7 @@ const Login = () => {
     e.preventDefault();
 
     // Mes requêtes vont s'effectuer, j'affiche mon loading
-    //setIsLoading(true);
+    setIsLoading(true);
 
     // Informations nécessaires pour la requête
     const loginOptions = {
@@ -61,20 +58,21 @@ const Login = () => {
 
       // Redirection vers la page d'administration
       navigate('/admin');
+
     }
     else {
 
       // Si ce n'est pas le cas on retire le loading
-      //setIsLoading(false);
+      setIsLoading(false);
       return;
     }
   };
 
   // Affiche le spinner pendant 1s au montage initial (purement esthétique)
-  effect(() => {
-    console.log(isLoading.value);
+  useEffect(() => {
     const timeoutId = setTimeout(() => {
-      isLoading.value = false;
+      setIsLoading(false);
+      setIsLoadingLogin(false);
     }, 1000);
   
     return () => clearTimeout(timeoutId);
@@ -95,8 +93,7 @@ const Login = () => {
   return (
     
     <Container fluid className="position-relative d-flex p-0">
-      <p>isloading : {isLoading.value}</p>
-      <SpinnerWrapper $showSpinner={isLoading.value} />
+      <SpinnerWrapper $showSpinner={isLoadingLogin} />
       <Container fluid>
         <Row className="h-100 align-items-center justify-content-center" style={{ minHeight: '100vh' }}>
           <Col xs={12} sm={8} md={6} lg={5} xl={4}>
@@ -106,11 +103,11 @@ const Login = () => {
               </div>
               <Form onSubmit={handleSubmit}>
                 <Form.Floating className="mb-3">
-                  <Form.Control type="text" id="floatingInput"  value={username} onInput={(e) => {username.value = e.target.value}} required />
+                  <Form.Control type="text" id="floatingInput"  value={username} onInput={(e) => setUsername(e.target.value)} required />
                   <label htmlFor="floatingInput">Pseudonyme</label>
                 </Form.Floating>
                 <Form.Floating className="mb-4">
-                  <Form.Control type="password" id="floatingPassword" value={password} onInput={(e) => {password.value = e.target.value}} required />
+                  <Form.Control type="password" id="floatingPassword" value={password} onInput={(e) => setPassword(e.target.value)} required />
                   <label htmlFor="floatingPassword">Mot de passe</label>
                 </Form.Floating>
                 <Button type="submit" className="btn btn-primary py-3 w-100">Connexion</Button>

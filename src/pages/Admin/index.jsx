@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import AdminSidebar from '../../composants/Admin/AdminSideBar';
-import AdminMainPanel from '../../composants/Admin/AdminMainPanel';
-import AdminUserTable from '../../composants/UsersManagement/AdminUserTable';
-import AdminRoleTable from '../../composants/RolesManagement/AdminRoleTable';
+import Sidebar from '../../composants/Admin/SideBar';
+import MainPanel from '../../composants/Admin/MainPanel'
+import UserTable from '../../composants/UsersManagement/UserTable';
+import RoleTable from '../../composants/RolesManagement/RoleTable';
+import StockTable from '../../composants/StocksManagement/StockTable';
 import { Container } from 'react-bootstrap';
 
 const Admin = () => {
@@ -19,9 +20,11 @@ const Admin = () => {
   const renderMainPanel = () => {
     switch (selectedOption) {
       case 'Gestion des utilisateurs':
-        return <AdminUserTable />;
+        return <UserTable />;
       case 'Gestion des roles':
-        return <AdminRoleTable />;
+        return <RoleTable />;
+      case 'Gestion des stocks':
+        return <StockTable />;
       default:
         return <div>Sélectionnez une option</div>;
     }
@@ -29,8 +32,8 @@ const Admin = () => {
 
   return (
     <Container fluid className='position-relative d-flex p-0'>
-      <AdminSidebar handleOptionClick={handleOptionClick} />
-      <AdminMainPanel>{renderMainPanel()}</AdminMainPanel>
+      <Sidebar handleOptionClick={handleOptionClick} />
+      <MainPanel>{renderMainPanel()}</MainPanel>
     </Container>
   );
 };
