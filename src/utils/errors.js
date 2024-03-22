@@ -1,5 +1,6 @@
-export const errorMessages = {
-    invalidCredentials: 'Identifiants incorrects',
-    serverError: 'Une erreur est survenue côté serveur. Veuillez réessayer ultérieurement.',
-  };
-  
+const errorMessages = {
+  invalidCredentials: 'Identifiants incorrects',
+  serverError: 'Une erreur est survenue côté serveur. Veuillez réessayer ultérieurement.',
+};
+
+export default errorMessages;

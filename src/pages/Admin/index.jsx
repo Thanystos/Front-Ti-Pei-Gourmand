@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
+import { Container } from 'react-bootstrap';
 import Sidebar from '../../composants/Admin/SideBar';
-import MainPanel from '../../composants/Admin/MainPanel'
+import MainPanel from '../../composants/Admin/MainPanel';
 import UserTable from '../../composants/UsersManagement/UserTable';
 import RoleTable from '../../composants/RolesManagement/RoleTable';
 import StockTable from '../../composants/StocksManagement/StockTable';
-import { Container } from 'react-bootstrap';
 
-const Admin = () => {
-
+function Admin() {
   // State récupérant le texte de l'option sélectionnée dans la sidebar
   const [selectedOption, setSelectedOption] = useState('');
 
@@ -31,11 +30,11 @@ const Admin = () => {
   };
 
   return (
-    <Container fluid className='position-relative d-flex p-0'>
+    <Container fluid className="position-relative d-flex p-0">
       <Sidebar handleOptionClick={handleOptionClick} />
       <MainPanel>{renderMainPanel()}</MainPanel>
     </Container>
   );
-};
+}
 
 export default Admin;

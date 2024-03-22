@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import GenericTable from '../../Generic/GenericTable';
 
-const UserTable = () => {
-
+function UserTable() {
   // State permettant de définir les informations des Users à afficher
   const [displayedColumns, setDisplayedColumns] = useState({
     username: true,
@@ -17,8 +16,8 @@ const UserTable = () => {
   });
 
   return (
-    <GenericTable name={'users'} displayedColumns={displayedColumns} setDisplayedColumns={setDisplayedColumns}/>
+    <GenericTable name="users" displayedColumns={displayedColumns} setDisplayedColumns={setDisplayedColumns} />
   );
-};
+}
 
 export default UserTable;

@@ -1,6 +1,6 @@
 export const getUserRoles = (user) => {
   if (user && user.userRoles && user.userRoles.length > 0) {
-    return user.userRoles.map(userRole => ({ id: userRole.role.id, name: userRole.role.name }));
+    return user.userRoles.map((userRole) => ({ id: userRole.role.id, name: userRole.role.name }));
   }
   return [];
 };
@@ -25,7 +25,6 @@ export const getCurrentDate = () => {
 
 // Convertit la String de date de la bdd en Date pour la valeur par défaut du champ date
 export const stringToDate = (date) => {
-
   // On crée un objet Date avec notre String de date
   const formattedDate = new Date(date);
 
@@ -41,4 +40,3 @@ export const stringToDate = (date) => {
   // on retourne la date convertit en Date
   return `${year}-${month}-${day}`;
 };
-  

@@ -1,15 +1,19 @@
+/* eslint-disable jsx-a11y/label-has-associated-control */
 import React, { useEffect, useState } from 'react';
-import { Button, Col, Container, Form, Row } from 'react-bootstrap';
+import {
+  Button, Col, Container, Form, Row,
+} from 'react-bootstrap';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUserEdit } from '@fortawesome/free-solid-svg-icons';
 import { useApi } from '../../utils/hooks';
 import SpinnerWrapper from '../../composants/SpinnerWrapper';
 
-const Login = () => {
-
+function Login() {
   // States et méthodes partagés par mon provider
-  const {setIsLoading, errors, fetchData, updateUserAuth } = useApi();
+  const {
+    setIsLoading, errors, fetchData, updateUserAuth,
+  } = useApi();
 
   // States récupérant le contenu des champs du même nom du formulaire
   const [username, setUsername] = useState('');
@@ -30,7 +34,6 @@ const Login = () => {
 
   // Requête l'API à la soumission du formulaire
   const handleSubmit = async (e) => {
-
     // On retire le comportement par défaut du formulaire
     e.preventDefault();
 
@@ -45,12 +48,12 @@ const Login = () => {
       },
       body: JSON.stringify({ username, password }),
     };
-  
-    // Interroge l'API lui demandant de fournir le token d'id lié au User identifié par le formulaire
+
+    // Interroge l'API lui demandant de fournir le token d'id lié au User identifié
     const { data } = await fetchData('http://localhost:8000/api/login', loginOptions, true);
 
     // Si le User est trouvé son token d'id sera disponible
-    if(data.token) {
+    if (data.token) {
       console.log('1');
 
       // Permet d'obtenir toutes les informations d'identification du user
@@ -58,13 +61,9 @@ const Login = () => {
 
       // Redirection vers la page d'administration
       navigate('/admin');
-
-    }
-    else {
-
+    } else {
       // Si ce n'est pas le cas on retire le loading
       setIsLoading(false);
-      return;
     }
   };
 
@@ -74,24 +73,12 @@ const Login = () => {
       setIsLoading(false);
       setIsLoadingLogin(false);
     }, 1000);
-  
+
     return () => clearTimeout(timeoutId);
   });
-  
-  
-  
-
-
-  /* 
-    React me conseille de mettre en dépendance setIsLoading or le useeffect
-    ne doit se déclencher qu'au montage initial du composant. Je retire donc l'avertissement
-  */
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  
 
   console.log('Montage du composant Login (2 fois initialement)');
   return (
-    
     <Container fluid className="position-relative d-flex p-0">
       <SpinnerWrapper $showSpinner={isLoadingLogin} />
       <Container fluid>
@@ -99,11 +86,14 @@ const Login = () => {
           <Col xs={12} sm={8} md={6} lg={5} xl={4}>
             <div className="bg-secondary rounded p-4 p-sm-5 my-4 mx-3">
               <div className="d-flex align-items-center justify-content-between mb-3">
-                  <h3 className="text-primary"><FontAwesomeIcon icon={faUserEdit} className='me-2' />TP Gourmand</h3>
+                <h3 className="text-primary">
+                  <FontAwesomeIcon icon={faUserEdit} className="me-2" />
+                  TP Gourmand
+                </h3>
               </div>
               <Form onSubmit={handleSubmit}>
                 <Form.Floating className="mb-3">
-                  <Form.Control type="text" id="floatingInput"  value={username} onInput={(e) => setUsername(e.target.value)} required />
+                  <Form.Control type="text" id="floatingInput" value={username} onInput={(e) => setUsername(e.target.value)} required />
                   <label htmlFor="floatingInput">Pseudonyme</label>
                 </Form.Floating>
                 <Form.Floating className="mb-4">
@@ -119,8 +109,8 @@ const Login = () => {
           </Col>
         </Row>
       </Container>
-    </Container>  
+    </Container>
   );
-};
+}
 
 export default Login;

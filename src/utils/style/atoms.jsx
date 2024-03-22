@@ -1,7 +1,7 @@
-import styled from "styled-components";
+import styled from 'styled-components';
 
 // Le spinner s'affiche en fonction de l'état de la prop $visible
-export const SpinnerWrapperStyled = styled.div`
+const SpinnerWrapperStyled = styled.div`
   position: fixed;
     top: 50%;
     left: 50%;
@@ -17,3 +17,5 @@ export const SpinnerWrapperStyled = styled.div`
   transition: opacity .5s ease-out, visibility 0s linear .5s;
   z-index: 99999;
 `;
+
+export default SpinnerWrapperStyled;
